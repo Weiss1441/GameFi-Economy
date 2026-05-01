@@ -1,9 +1,11 @@
+# WEEK 6
+
 # Blockchain Technologies 2 FINAL PROJECT
 ## Team Members: Darya Dmukhailo, Nurym Muratov
 ### Topic:GameFi Economy
 #### an ERC-1155 in-game item economy with crafting, a marketplace AMM for fungible resources, an NFT rental vault, Chainlink VRF for loot drops, DAO-governed game parameters (drop rates,crafting costs), L2 deployment.
 
-# WEEK 6
+# WEEK 7
 
 # Project Setup & Initialization
 
