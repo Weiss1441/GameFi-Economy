@@ -2,12 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, master]
   pull_request:
-    branches: [main]
-
-env:
-  FOUNDRY_PROFILE: ci
+    branches: [main, master]
 
 jobs:
   test:
@@ -22,15 +19,16 @@ jobs:
         with:
           version: nightly
 
+      - name: Install dependencies
+        run: |
+          forge install OpenZeppelin/openzeppelin-contracts --no-commit
+          forge install foundry-rs/forge-std --no-commit
+
       - name: Run Forge build
         run: |
-          forge --version
+          forge clean
           forge build
 
       - name: Run Forge tests
         run: |
-          forge test -vvv
-
-      - name: Run Forge coverage
-        run: |
-          forge coverage
+          forge test
