@@ -50,3 +50,37 @@ forge coverage
 ## Test Results
 - All tests passed: 20/20
 - Coverage >80%
+
+
+
+# WEEK 7
+
+### Added Components
+
+- GovernanceToken (ERC20Votes + ERC20Permit) 
+- GameVault (ERC-4626 yield vault) 
+- GameFactory (CREATE + CREATE2) 
+- Yul assembly optimization (sqrt) 
+
+### Test Summary
+
+- All tests passed: 46/46
+- Coverage 78.97% 
+- Fuzz tests: ResourceAMM swap invariant + GameVault deposit/withdraw
+- Unit tests: All core functions covered
+
+## Commands used in this week
+
+### Dependencies installation
+
+- forge install foundry-rs/forge-stdforge install OpenZeppelin/openzeppelin-contracts-upgradeable 
+- forge install OpenZeppelin/openzeppelin-foundry-upgrades
+
+### Tests
+
+- forge test test/GovernanceTokenTest.t.sol
+- forge test test/GameVault.t.sol
+- forge test test/GameFactory.t.sol
+
+### Check coverage
+- forge coverage --report summary

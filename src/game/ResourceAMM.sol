@@ -147,4 +147,37 @@ contract ResourceAMM is Ownable, IResourceAMM {
             z = 1;
         }
     }
+
+    // pure Solidity version
+function sqrtSolidity(uint256 y) public pure returns (uint256 z) {
+    if (y > 3) {
+        z = y;
+        uint256 x = y / 2 + 1;
+        while (x < z) {
+            z = x;
+            x = (y / x + x) / 2;
+        }
+    } else if (y != 0) {
+        z = 1;
+    }
+}
+
+// Yul assembly version 
+function sqrtYul(uint256 y) public pure returns (uint256 z) {
+    assembly {
+        if gt(y, 3) {
+            z := y
+            let x := add(div(y, 2), 1)
+            for {} lt(x, z) {} {
+                z := x
+                x := div(add(div(y, x), x), 2)
+            }
+        }
+        if iszero(z) {
+            if iszero(iszero(y)) {
+                z := 1
+            }
+        }
+    }
+}
 }
