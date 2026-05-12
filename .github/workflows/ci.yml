@@ -9,6 +9,10 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+
+    env:
+      ETH_MAINNET_RPC: ${{ secrets.ETH_MAINNET_RPC }}
+
     steps:
       - uses: actions/checkout@v4
         with:
