@@ -120,7 +120,7 @@ graph LR
 
 - **GameTimelock.sol**: An autonomous administrative gatekeeper contract. It acts as the owner of the protocol, enforcing a mandatory 2-day delay on all approved governance actions to give users a chance to exit the system if a malicious proposal passes.
 
-- **UpgradeableModuleV1.sol & UpgradeableModuleV2.sol**: Implementation logic contracts built on the UUPS proxy pattern (ERC-1967). They demonstrate secure storage expansion across version upgrades while protecting existing memory slots from corruption.
+- **UpgradeableModuleV1.sol & UpgradeableModuleV2.sol**: A simple UUPS example is implemented for the vault module. The project includes GameVaultV1 as an upgradeable implementation contract and GameVaultV2 as a follow-up version that adds a new reserve ratio field and function. The upgrade flow is tested end-to-end: V1 is deployed through an ERC1967Proxy, state is changed on V1, the proxy is upgraded to V2, and the same state values (yieldRate and owner) are verified after upgrade. There is also a local script that runs the upgrade and logs the state before and after, showing that the upgrade does not break stored data.
 
 ## 2. Component Interactions & Critical Sequences
 
