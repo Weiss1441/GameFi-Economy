@@ -2,6 +2,8 @@
 pragma solidity ^0.8.25;
 
 import "forge-std/Script.sol";
+import "@openzeppelin/contracts/governance/utils/IVotes.sol";
+import "@openzeppelin/contracts/governance/TimelockController.sol";
 
 import "../src/governance/GovernanceToken.sol";
 import "../src/governance/GameGovernor.sol";
