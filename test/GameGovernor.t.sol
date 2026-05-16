@@ -18,10 +18,7 @@ contract GameGovernorTest is Test {
         address[] memory proposers = new address[](1);
         address[] memory executors = new address[](1);
         timelock = new GameTimelock(2 days, proposers, executors, address(this));
-        governor = new GameGovernor(
-            IVotes(address(token)),
-            TimelockController(payable(address(timelock)))
-        );
+        governor = new GameGovernor(IVotes(address(token)), TimelockController(payable(address(timelock))));
         timelock.grantRole(timelock.PROPOSER_ROLE(), address(governor));
         timelock.grantRole(timelock.EXECUTOR_ROLE(), address(0));
         params = new GameParameters();
@@ -46,7 +43,13 @@ contract GameGovernorTest is Test {
     }
 
     function testGovernanceFlow() public {
-        (uint256 proposalId, address[] memory targets, uint256[] memory values, bytes[] memory calldatas, string memory description) = _propose();
+        (
+            uint256 proposalId,
+            address[] memory targets,
+            uint256[] memory values,
+            bytes[] memory calldatas,
+            string memory description
+        ) = _propose();
         vm.roll(block.number + governor.votingDelay() + 1);
         vm.prank(voter);
         governor.castVote(proposalId, 1);
@@ -59,22 +62,22 @@ contract GameGovernorTest is Test {
     }
 
     function test_proposalState_active() public {
-        (uint256 proposalId,,,, ) = _propose();
+        (uint256 proposalId,,,,) = _propose();
         vm.roll(block.number + governor.votingDelay() + 1);
-        assertEq(uint(governor.state(proposalId)), uint(IGovernor.ProposalState.Active));
+        assertEq(uint256(governor.state(proposalId)), uint256(IGovernor.ProposalState.Active));
     }
 
     function test_proposalState_defeated() public {
-        (uint256 proposalId,,,, ) = _propose();
+        (uint256 proposalId,,,,) = _propose();
         vm.roll(block.number + governor.votingDelay() + 1);
         vm.prank(voter);
         governor.castVote(proposalId, 0);
         vm.roll(block.number + governor.votingPeriod() + 1);
-        assertEq(uint(governor.state(proposalId)), uint(IGovernor.ProposalState.Defeated));
+        assertEq(uint256(governor.state(proposalId)), uint256(IGovernor.ProposalState.Defeated));
     }
 
     function test_revert_double_vote() public {
-        (uint256 proposalId,,,, ) = _propose();
+        (uint256 proposalId,,,,) = _propose();
         vm.roll(block.number + governor.votingDelay() + 1);
         vm.prank(voter);
         governor.castVote(proposalId, 1);

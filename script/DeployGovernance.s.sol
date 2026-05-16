@@ -18,35 +18,18 @@ contract DeployGovernance is Script {
         address[] memory proposers = new address[](1);
         address[] memory executors = new address[](1);
 
-        GameTimelock timelock = new GameTimelock(
-            2 days,
-            proposers,
-            executors,
-            msg.sender
-        );
+        GameTimelock timelock = new GameTimelock(2 days, proposers, executors, msg.sender);
 
-        GameGovernor governor = new GameGovernor(
-            IVotes(address(token)),
-            TimelockController(payable(address(timelock)))
-        );
+        GameGovernor governor = new GameGovernor(IVotes(address(token)), TimelockController(payable(address(timelock))));
 
         proposers[0] = address(governor);
         executors[0] = address(0);
 
-        timelock.grantRole(
-            timelock.PROPOSER_ROLE(),
-            address(governor)
-        );
+        timelock.grantRole(timelock.PROPOSER_ROLE(), address(governor));
 
-        timelock.grantRole(
-            timelock.EXECUTOR_ROLE(),
-            address(0)
-        );
+        timelock.grantRole(timelock.EXECUTOR_ROLE(), address(0));
 
-        timelock.revokeRole(
-            timelock.DEFAULT_ADMIN_ROLE(),
-            msg.sender
-        );
+        timelock.revokeRole(timelock.DEFAULT_ADMIN_ROLE(), msg.sender);
 
         vm.stopBroadcast();
     }

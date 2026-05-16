@@ -5,36 +5,24 @@ import "forge-std/Test.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface IChainlinkFeed {
-    function latestRoundData() external view returns (
-        uint80,
-        int256,
-        uint256,
-        uint256,
-        uint80
-    );
+    function latestRoundData() external view returns (uint80, int256, uint256, uint256, uint80);
 
     function decimals() external view returns (uint8);
 }
 
 contract ForkTest is Test {
-    address constant USDC =
-        0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+    address constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
 
-    address constant ETH_USD_FEED =
-        0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
+    address constant ETH_USD_FEED = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
 
     // Binance hot wallet
-    address constant USDC_WHALE =
-        0x28C6c06298d514Db089934071355E5743bf21d60;
+    address constant USDC_WHALE = 0x28C6c06298d514Db089934071355E5743bf21d60;
 
     uint256 mainnetFork;
     bool forkEnabled;
 
     function setUp() public {
-        string memory rpc = vm.envOr(
-            "ETH_MAINNET_RPC",
-            string("")
-        );
+        string memory rpc = vm.envOr("ETH_MAINNET_RPC", string(""));
 
         // если RPC отсутствует — CI не падает
         if (bytes(rpc).length == 0) {
@@ -53,13 +41,7 @@ contract ForkTest is Test {
 
         IChainlinkFeed feed = IChainlinkFeed(ETH_USD_FEED);
 
-        (
-            uint80 roundId,
-            int256 price,
-            ,
-            uint256 updatedAt,
-
-        ) = feed.latestRoundData();
+        (uint80 roundId, int256 price,, uint256 updatedAt,) = feed.latestRoundData();
 
         assertGt(roundId, 0);
         assertGt(price, 100 * 1e8);
@@ -82,8 +64,7 @@ contract ForkTest is Test {
 
         address recipient = address(0xBEEF);
 
-        uint256 whaleBefore =
-            usdc.balanceOf(USDC_WHALE);
+        uint256 whaleBefore = usdc.balanceOf(USDC_WHALE);
 
         assertGt(whaleBefore, 1000 * 1e6);
 
@@ -91,14 +72,8 @@ contract ForkTest is Test {
 
         usdc.transfer(recipient, 1000 * 1e6);
 
-        assertEq(
-            usdc.balanceOf(recipient),
-            1000 * 1e6
-        );
+        assertEq(usdc.balanceOf(recipient), 1000 * 1e6);
 
-        assertEq(
-            usdc.balanceOf(USDC_WHALE),
-            whaleBefore - 1000 * 1e6
-        );
+        assertEq(usdc.balanceOf(USDC_WHALE), whaleBefore - 1000 * 1e6);
     }
 }

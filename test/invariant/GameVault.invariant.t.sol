@@ -9,6 +9,7 @@ contract MockAsset is ERC20 {
     constructor() ERC20("Mock Asset", "MASSET") {
         _mint(msg.sender, 10_000_000 ether);
     }
+
     function mint(address to, uint256 amount) external {
         _mint(to, amount);
     }

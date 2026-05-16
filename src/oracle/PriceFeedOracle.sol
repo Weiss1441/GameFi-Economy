@@ -10,13 +10,7 @@ interface AggregatorV3Interface {
     function latestRoundData()
         external
         view
-        returns (
-            uint80 roundId,
-            int256 answer,
-            uint256 startedAt,
-            uint256 updatedAt,
-            uint80 answeredInRound
-        );
+        returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound);
 }
 
 contract PriceFeedOracle is Ownable, IPriceFeedOracle {
@@ -28,10 +22,7 @@ contract PriceFeedOracle is Ownable, IPriceFeedOracle {
     error StalePrice(uint256 updatedAt, uint256 maxStalenessSeconds);
 
     event FeedUpdated(address indexed oldFeed, address indexed newFeed);
-    event MaxStalenessUpdated(
-        uint256 oldMaxStalenessSeconds,
-        uint256 newMaxStalenessSeconds
-    );
+    event MaxStalenessUpdated(uint256 oldMaxStalenessSeconds, uint256 newMaxStalenessSeconds);
 
     constructor(address feed_, uint256 maxStalenessSeconds_) Ownable(msg.sender) {
         if (feed_ == address(0)) revert InvalidFeed(feed_);
@@ -45,32 +36,19 @@ contract PriceFeedOracle is Ownable, IPriceFeedOracle {
         feed = AggregatorV3Interface(feed_);
     }
 
-    function setMaxStaleness(uint256 maxStalenessSeconds_)
-        external
-        onlyOwner
-    {
+    function setMaxStaleness(uint256 maxStalenessSeconds_) external onlyOwner {
         emit MaxStalenessUpdated(maxStalenessSeconds, maxStalenessSeconds_);
         maxStalenessSeconds = maxStalenessSeconds_;
     }
 
-    function getLatestPrice()
-        public
-        view
-        override
-        returns (int256 price, uint8 decimals)
-    {
-        (
-            uint80 roundId,
-            int256 answer,
-            ,
-            uint256 updatedAt,
-            uint80 answeredInRound
-        ) = feed.latestRoundData();
+    function getLatestPrice() public view override returns (int256 price, uint8 decimals) {
+        (uint80 roundId, int256 answer,, uint256 updatedAt, uint80 answeredInRound) = feed.latestRoundData();
 
         if (roundId == 0 || answeredInRound == 0) revert InvalidPrice(answer);
         if (answer <= 0) revert InvalidPrice(answer);
-        if (block.timestamp - updatedAt > maxStalenessSeconds)
+        if (block.timestamp - updatedAt > maxStalenessSeconds) {
             revert StalePrice(updatedAt, maxStalenessSeconds);
+        }
 
         return (answer, feed.decimals());
     }

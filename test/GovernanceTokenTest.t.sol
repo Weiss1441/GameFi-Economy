@@ -48,7 +48,9 @@ contract GovernanceTokenTest is Test {
                     token.DOMAIN_SEPARATOR(),
                     keccak256(
                         abi.encode(
-                            keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"),
+                            keccak256(
+                                "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
+                            ),
                             owner,
                             user,
                             100 ether,

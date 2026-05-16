@@ -50,7 +50,7 @@ contract PriceFeedOracleTest is Test {
         vm.prank(owner);
         oracle.setFeed(address(otherFeed));
 
-        (int256 price, ) = oracle.getLatestPrice();
+        (int256 price,) = oracle.getLatestPrice();
         assertEq(price, 123 * 1e8);
     }
 
