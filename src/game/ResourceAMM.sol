@@ -44,7 +44,7 @@ contract ResourceAMM is Ownable, IResourceAMM {
         tokenB.safeTransferFrom(msg.sender, address(this), amountB);
         
         if (totalLiquidityShares == 0) {
-            shares = _sqrt(amountA * amountB);
+            shares = sqrtYul(amountA * amountB);
         } else {
             uint256 sharesA = (amountA * totalLiquidityShares) / reserveA;
             uint256 sharesB = (amountB * totalLiquidityShares) / reserveB;
@@ -82,7 +82,7 @@ contract ResourceAMM is Ownable, IResourceAMM {
         emit LiquidityRemoved(msg.sender, amountA, amountB, shares);
     }
     
-    function swap(address tokenIn, address tokenOut, uint256 amountIn) 
+    function swap(address tokenIn, address tokenOut, uint256 amountIn, uint256 minAmountOut) 
         external 
         override 
         returns (uint256 amountOut) 
@@ -99,6 +99,7 @@ contract ResourceAMM is Ownable, IResourceAMM {
         uint256 amountInWithFee = amountIn * (FEE_DENOMINATOR - FEE);
         amountOut = (amountInWithFee * reserveOut) / (reserveIn * FEE_DENOMINATOR + amountInWithFee);
         require(amountOut > 0, "Insufficient output amount");
+        require(amountOut >= minAmountOut, "High slippage");
         
         IERC20(tokenIn).safeTransferFrom(msg.sender, address(this), amountIn);
         IERC20(tokenOut).safeTransfer(msg.sender, amountOut);
@@ -135,7 +136,9 @@ contract ResourceAMM is Ownable, IResourceAMM {
         return (amountInWithFee * reserveOut) / (reserveIn * FEE_DENOMINATOR + amountInWithFee);
     }
     
-    function _sqrt(uint256 y) private pure returns (uint256 z) {
+    /*
+    // pure Solidity version used for current gas comparison
+    function sqrtSolidity(uint256 y) public pure returns (uint256 z) {
         if (y > 3) {
             z = y;
             uint256 x = y / 2 + 1;
@@ -147,37 +150,24 @@ contract ResourceAMM is Ownable, IResourceAMM {
             z = 1;
         }
     }
+    */
 
-    // pure Solidity version
-function sqrtSolidity(uint256 y) public pure returns (uint256 z) {
-    if (y > 3) {
-        z = y;
-        uint256 x = y / 2 + 1;
-        while (x < z) {
-            z = x;
-            x = (y / x + x) / 2;
-        }
-    } else if (y != 0) {
-        z = 1;
-    }
-}
-
-// Yul assembly version 
-function sqrtYul(uint256 y) public pure returns (uint256 z) {
-    assembly {
-        if gt(y, 3) {
-            z := y
-            let x := add(div(y, 2), 1)
-            for {} lt(x, z) {} {
-                z := x
-                x := div(add(div(y, x), x), 2)
+    // Yul assembly version
+    function sqrtYul(uint256 y) public pure returns (uint256 z) {
+        assembly {
+            if gt(y, 3) {
+                z := y
+                let x := add(div(y, 2), 1)
+                for {} lt(x, z) {} {
+                    z := x
+                    x := div(add(div(y, x), x), 2)
+                }
             }
-        }
-        if iszero(z) {
-            if iszero(iszero(y)) {
-                z := 1
+            if iszero(z) {
+                if iszero(iszero(y)) {
+                    z := 1
+                }
             }
         }
     }
-}
 }

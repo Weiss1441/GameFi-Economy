@@ -60,10 +60,10 @@ contract ResourceAMMTest is Test {
         amm.addLiquidity(100 ether, 100 ether);
         
         vm.prank(user2);
-        uint256 amountOut = amm.swap(address(tokenA), address(tokenB), 10 ether);
+        uint256 amountOut = amm.swap(address(tokenA), address(tokenB), 10 ether, 1);
         
         assertGt(amountOut, 0);
-        assertLt(amountOut, 10 ether); 
+        assertLt(amountOut, 10 ether);
         
         (uint256 reserveA, uint256 reserveB) = amm.getReserves();
         assertEq(reserveA, 110 ether);
@@ -85,7 +85,16 @@ contract ResourceAMMTest is Test {
     function test_revert_insufficientLiquidity() public {
         vm.prank(user);
         vm.expectRevert("Insufficient output amount");
-        amm.swap(address(tokenA), address(tokenB), 10 ether);
+        amm.swap(address(tokenA), address(tokenB), 10 ether, 0);
+    }
+
+    function test_revert_highSlippage() public {
+        vm.prank(user);
+        amm.addLiquidity(100 ether, 100 ether);
+
+        vm.prank(user2);
+        vm.expectRevert("High slippage");
+        amm.swap(address(tokenA), address(tokenB), 10 ether, 10 ether);
     }
     
     function test_getAmountOut() public {
@@ -95,6 +104,12 @@ contract ResourceAMMTest is Test {
         uint256 amountOut = amm.getAmountOut(10 ether, address(tokenA), address(tokenB));
         assertGt(amountOut, 0);
         assertLt(amountOut, 10 ether);
+    }
+
+    function test_gas_sqrtYul() public view {
+        uint256 value = 10_000 ether;
+        uint256 result = amm.sqrtYul(value);
+        assertGt(result, 0);
     }
     
     function testFuzz_swapInvariant(uint256 amountIn) public {
@@ -107,8 +122,8 @@ contract ResourceAMMTest is Test {
         uint256 kBefore = reserveABefore * reserveBBefore;
         
         vm.prank(user2);
-        uint256 amountOut = amm.swap(address(tokenA), address(tokenB), amountIn);
-        
+        amm.swap(address(tokenA), address(tokenB), amountIn, 0);
+
         (uint256 reserveAAfter, uint256 reserveBAfter) = amm.getReserves();
         uint256 kAfter = reserveAAfter * reserveBAfter;
         

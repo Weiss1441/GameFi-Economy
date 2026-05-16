@@ -31,7 +31,7 @@ contract AMMHandler is Test {
         tokenA.mint(actor, amountIn);
         vm.startPrank(actor);
         tokenA.approve(address(amm), amountIn);
-        try amm.swap(address(tokenA), address(tokenB), amountIn) {} catch {}
+        try amm.swap(address(tokenA), address(tokenB), amountIn, 0) {} catch {}
         vm.stopPrank();
     }
 
