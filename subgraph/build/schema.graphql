@@ -1,0 +1,34 @@
+type Swap @entity(immutable: true) {
+  id: ID!
+  user: Bytes!
+  tokenIn: Bytes!
+  tokenOut: Bytes!
+  amountIn: BigInt!
+  amountOut: BigInt!
+  timestamp: BigInt!
+}
+
+type Transfer @entity(immutable: true) {
+  id: ID!
+  from: Bytes!
+  to: Bytes!
+  amount: BigInt!
+  timestamp: BigInt!
+}
+
+type Vote @entity(immutable: true) {
+  id: ID!
+  voter: Bytes!
+  proposalId: BigInt!
+  support: Int!
+  weight: BigInt!
+  reason: String
+}
+
+type UserStat @entity(immutable: false) {
+  id: ID!
+  totalSwaps: BigInt!
+  totalVolumeIn: BigInt!
+  totalVotes: BigInt!
+  lastActiveAt: BigInt!
+}

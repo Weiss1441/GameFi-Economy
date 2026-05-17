@@ -10,6 +10,8 @@ import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "../src/game/GameItems.sol";
 import "../src/game/RentalVault.sol";
 import "../src/game/GameParameters.sol";
+import "../src/game/ResourceAMM.sol";
+import "../src/factory/GameFactory.sol";
 import "../src/governance/GovernanceToken.sol";
 import "../src/governance/GameGovernor.sol";
 import "../src/governance/GameTimelock.sol";
@@ -33,6 +35,9 @@ contract DeployFull is Script {
         GovernanceToken token = new GovernanceToken();
         console.log("GovernanceToken deployed at:", address(token));
 
+        GovernanceToken tokenB = new GovernanceToken();
+        console.log("GovernanceToken B deployed at:", address(tokenB));
+
         address deployer = vm.addr(deployerPrivateKey);
         address[] memory proposers = new address[](0);
         address[] memory executors = new address[](0);
@@ -48,7 +53,15 @@ contract DeployFull is Script {
         timelock.revokeRole(timelock.DEFAULT_ADMIN_ROLE(), msg.sender);
 
         GameVaultV1 implementationV1 = new GameVaultV1();
-        bytes memory initData = abi.encodeWithSelector(GameVaultV1.initialize.selector, "GameFi Vault Shares", "vGFI", 500);
+        bytes memory initData = abi.encodeWithSelector(
+            GameVaultV1.initialize.selector,
+            address(token),
+            "GameFi Vault Shares",
+            "vGFI",
+            500,
+            deployer,
+            0
+        );
         ERC1967Proxy vaultProxy = new ERC1967Proxy(address(implementationV1), initData);
         console.log("GameVault proxy deployed at:", address(vaultProxy));
         console.log("GameVault V1 implementation deployed at:", address(implementationV1));
@@ -57,6 +70,14 @@ contract DeployFull is Script {
         GameVaultV2 implementationV2 = new GameVaultV2();
         vaultV1.upgradeToAndCall(address(implementationV2), "");
         console.log("GameVault V2 implementation deployed at:", address(implementationV2));
+
+        
+        ResourceAMM amm = new ResourceAMM(address(token), address(tokenB));
+        console.log("ResourceAMM deployed at:", address(amm));
+
+        
+        GameFactory factory = new GameFactory();
+        console.log("GameFactory deployed at:", address(factory));
 
         vm.stopBroadcast();
     }

@@ -3,47 +3,208 @@ pragma solidity ^0.8.25;
 
 import "forge-std/Test.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../src/vault/GameVaultV1.sol";
 import "../src/vault/GameVaultV2.sol";
 
+
+contract MockToken is ERC20 {
+    constructor() ERC20("Mock Resource", "mRES") {}
+    function mint(address to, uint256 amount) external {
+        _mint(to, amount);
+    }
+}
+
 contract GameVaultUUPSTest is Test {
+    MockToken public asset;
+
     GameVaultV1 public implementationV1;
     GameVaultV2 public implementationV2;
     ERC1967Proxy public proxy;
     GameVaultV1 public vaultV1;
     GameVaultV2 public vaultV2;
 
+    address public owner   = address(this);
+    address public feeRecipient = address(0xFEE);
+    address public alice   = address(0xA11CE);
+
     function setUp() public {
+
+        asset = new MockToken();
+
+
         implementationV1 = new GameVaultV1();
-        bytes memory initData = abi.encodeWithSelector(GameVaultV1.initialize.selector, "GameFi Vault Shares", "vGFI", 500);
-        proxy = new ERC1967Proxy(address(implementationV1), initData);
+
+
+        bytes memory initData = abi.encodeCall(
+            GameVaultV1.initialize,
+            (
+                address(asset),   // asset_
+                "GameFi Vault",   // name_
+                "gvGFI",          // symbol_
+                500,              // yieldRate: 5%
+                feeRecipient,     // feeRecipient_
+                50                // feeBps: 0.5%
+            )
+        );
+
+        proxy  = new ERC1967Proxy(address(implementationV1), initData);
         vaultV1 = GameVaultV1(address(proxy));
     }
 
-    function testInitializeAndUpgradeVault() public {
-        assertEq(vaultV1.yieldRate(), 500);
-        assertEq(vaultV1.owner(), address(this));
 
+
+    function testInitialized() public view {
+        assertEq(vaultV1.yieldRate(), 500);
+        assertEq(vaultV1.feeBps(), 50);
+        assertEq(vaultV1.feeRecipient(), feeRecipient);
+        assertEq(vaultV1.owner(), owner);
+        assertEq(vaultV1.asset(), address(asset));
+    }
+
+    function testCannotInitializeTwice() public {
+        vm.expectRevert();
+        vaultV1.initialize(address(asset), "X", "Y", 100, feeRecipient, 10);
+    }
+
+
+
+    function testDeposit() public {
+        uint256 amount = 1000 ether;
+        asset.mint(alice, amount);
+
+        vm.startPrank(alice);
+        asset.approve(address(proxy), amount);
+        uint256 shares = vaultV1.deposit(amount, alice);
+        vm.stopPrank();
+
+
+        assertGt(shares, 0);
+
+        assertEq(asset.balanceOf(feeRecipient), 5 ether);
+
+        assertEq(vaultV1.balanceOf(alice), shares);
+    }
+
+    function testDepositZeroReverts() public {
+        vm.expectRevert(GameVaultV1.ZeroAmount.selector);
+        vaultV1.deposit(0, alice);
+    }
+
+    function testWithdraw() public {
+        uint256 amount = 1000 ether;
+        asset.mint(alice, amount);
+
+        vm.startPrank(alice);
+        asset.approve(address(proxy), amount);
+        vaultV1.deposit(amount, alice);
+
+        uint256 sharesBefore = vaultV1.balanceOf(alice);
+        assertGt(sharesBefore, 0);
+
+        // Выводим половину assets
+        uint256 withdrawAmount = 400 ether;
+        vaultV1.withdraw(withdrawAmount, alice, alice);
+        vm.stopPrank();
+
+        assertEq(asset.balanceOf(alice), withdrawAmount);
+    }
+
+
+
+    function testSetYieldRate() public {
         vaultV1.setYieldRate(750);
         assertEq(vaultV1.yieldRate(), 750);
+    }
+
+    function testSetYieldRateTooHighReverts() public {
+        vm.expectRevert(
+            abi.encodeWithSelector(GameVaultV1.YieldRateTooHigh.selector, 99999, 10000)
+        );
+        vaultV1.setYieldRate(99999);
+    }
+
+    function testSetYieldRateNonOwnerReverts() public {
+        vm.prank(alice);
+        vm.expectRevert();
+        vaultV1.setYieldRate(999);
+    }
+
+    function testSetFeeBps() public {
+        vaultV1.setFeeBps(100);
+        assertEq(vaultV1.feeBps(), 100);
+    }
+
+    function testSetFeeRecipient() public {
+        vaultV1.setFeeRecipient(alice);
+        assertEq(vaultV1.feeRecipient(), alice);
+    }
+
+    function testSetFeeRecipientZeroReverts() public {
+        vm.expectRevert(GameVaultV1.ZeroAddress.selector);
+        vaultV1.setFeeRecipient(address(0));
+    }
+
+
+    function testUpgradeToV2() public {
+
+        vaultV1.setYieldRate(750);
+
 
         implementationV2 = new GameVaultV2();
-        vm.prank(address(this));
-        GameVaultV1(address(proxy)).upgradeToAndCall(address(implementationV2), "");
+        GameVaultV1(address(proxy)).upgradeToAndCall(
+            address(implementationV2),
+            abi.encodeCall(GameVaultV2.initializeV2, (1000))
+        );
 
         vaultV2 = GameVaultV2(address(proxy));
-        assertEq(vaultV2.yieldRate(), 750);
-        assertEq(vaultV2.owner(), address(this));
 
-        vaultV2.setReserveRatio(1000);
+
+        assertEq(vaultV2.yieldRate(), 750);
+        assertEq(vaultV2.owner(), owner);
+        assertEq(vaultV2.feeBps(), 50);
         assertEq(vaultV2.reserveRatioBps(), 1000);
         assertEq(vaultV2.getReserveAdjustedAssets(10_000 ether), 9000 ether);
     }
 
     function testUpgradeFailsForNonOwner() public {
         implementationV2 = new GameVaultV2();
-        vm.prank(address(0xBEEF));
+        vm.prank(alice);
         vm.expectRevert();
         GameVaultV1(address(proxy)).upgradeToAndCall(address(implementationV2), "");
+    }
+
+    function testStoragePreservedAfterUpgrade() public {
+        uint256 amount = 1000 ether;
+        asset.mint(alice, amount);
+
+        vm.startPrank(alice);
+        asset.approve(address(proxy), amount);
+        vaultV1.deposit(amount, alice);
+        vm.stopPrank();
+
+        uint256 sharesBefore = vaultV1.balanceOf(alice);
+
+
+        implementationV2 = new GameVaultV2();
+        GameVaultV1(address(proxy)).upgradeToAndCall(
+            address(implementationV2),
+            abi.encodeCall(GameVaultV2.initializeV2, (500))
+        );
+
+        vaultV2 = GameVaultV2(address(proxy));
+
+        // Shares alice сохранились
+        assertEq(vaultV2.balanceOf(alice), sharesBefore);
+        // totalFeesCollected сохранился
+        assertGt(vaultV2.totalFeesCollected(), 0);
+    }
+
+
+
+    function testGetProjectedAssets() public view {
+
+        uint256 projected = vaultV1.getProjectedAssets(1000 ether, 365 days);
+        assertEq(projected, 1050 ether); // 1000 + 5%
     }
 }

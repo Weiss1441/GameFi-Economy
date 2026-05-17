@@ -1,0 +1,64 @@
+specVersion: 0.0.5
+schema:
+  file: schema.graphql
+dataSources:
+  - kind: ethereum
+    name: ResourceAMM
+    network: arbitrum-sepolia
+    source:
+      address: "0x57eD2c4971c019Ab120fbD6439E336C87CD56166"
+      abi: ResourceAMM
+      startBlock: 0
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Swap
+      abis:
+        - name: ResourceAMM
+          file: ResourceAMM\ResourceAMM.json
+      eventHandlers:
+        - event: Swap(indexed address,address,address,uint256,uint256)
+          handler: handleSwap
+      file: ResourceAMM\ResourceAMM.wasm
+  - kind: ethereum
+    name: GameVault
+    network: arbitrum-sepolia
+    source:
+      address: "0xCC19E02C1A6a97456D942a471516b44a084aA361"
+      abi: GameVaultV1
+      startBlock: 0
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Transfer
+      abis:
+        - name: GameVaultV1
+          file: GameVault\GameVaultV1.json
+      eventHandlers:
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleTransfer
+      file: ResourceAMM\ResourceAMM.wasm
+  - kind: ethereum
+    name: GameGovernor
+    network: arbitrum-sepolia
+    source:
+      address: "0x513a9341B3C1CfBb23Dce5C8104D6cE84B61116E"
+      abi: GameGovernor
+      startBlock: 0
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Vote
+      abis:
+        - name: GameGovernor
+          file: GameGovernor\GameGovernor.json
+      eventHandlers:
+        - event: VoteCast(indexed address,uint256,uint8,uint256,string)
+          handler: handleVote
+      file: ResourceAMM\ResourceAMM.wasm

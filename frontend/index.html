@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GameFi Economy | Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>GameFi Economy</h1>
+        <p>ERC-1155 items · AMM · Rental vault · DAO governance</p>
+      </div>
+      <div class="buttons-row">
+        <button id="connectMetaMask">MetaMask</button>
+        <button id="connectWalletConnect">WalletConnect</button>
+      </div>
+    </header>
+
+    <section class="status-card">
+      <div class="status-title">Network & Account</div>
+      <div id="statusMessage" class="status-message">Not connected</div>
+      <div class="status-grid">
+        <div class="status-item">
+          <strong>Chain:</strong>
+          <span id="chainLabel">-</span>
+        </div>
+        <div class="status-item">
+          <strong>Address:</strong>
+          <span id="accountLabel" class="address-compact">-</span>
+          <button id="copyAddressBtn" class="copy-btn" style="display:none">Copy</button>
+        </div>
+        <div class="status-item">
+          <strong>Network:</strong>
+          <span id="networkCheck">-</span>
+        </div>
+        <div class="status-item">
+          <button id="switchNetworkButton">Switch network</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="dashboard-grid">
+      
+      <section class="card">
+        <h2>Game Hub</h2>
+        <div class="subgrid">
+          <div class="action-box">
+            <h3>My Inventory</h3>
+            <div id="inventoryList" class="inventory-grid">Connect wallet to view items</div>
+          </div>
+          <div class="action-box">
+            <h3>Available Items (ERC-1155)</h3>
+            <div id="availableItemsList" class="inventory-grid">Connect wallet to view items</div>
+          </div>
+          <div class="action-box">
+            <h3>Craft new item</h3>
+            <label>Select Recipe</label>
+            <select id="craftRecipeSelect">
+              <option value="1">Wooden Sword (Recipe 1)</option>
+              <option value="2">Health Potion (Recipe 2)</option>
+            </select>
+            <button id="craftButton" class="full-width">Craft</button>
+          </div>
+          <div class="action-box">
+            <h3>Rental Vault</h3>
+            <label>Token ID <input id="rentalTokenId" type="number" placeholder="1" /></label>
+            <label>Amount <input id="rentalAmount" type="number" placeholder="1" /></label>
+            <button id="depositItemButton">Deposit item</button>
+            <button id="rentItemButton">Rent to 0x789...</button>
+          </div>
+        </div>
+      </section>
+
+      
+      <section class="card">
+        <h2>DeFi Hub</h2>
+        <div class="subgrid">
+          <div class="action-box">
+            <h3>Swap tokens (AMM)</h3>
+            <label>Amount</label>
+            <input id="swapAmount" type="number" min="0" step="0.0001" placeholder="1.0" />
+            <button id="swapButton" class="full-width">Swap A → B</button>
+            <div class="reserve-row">
+              <span>Reserve A</span>
+              <span id="reserveA">-</span>
+            </div>
+            <div class="reserve-row">
+              <span>Reserve B</span>
+              <span id="reserveB">-</span>
+            </div>
+          </div>
+
+          <div class="action-box">
+            <h3>Yield Vault (ERC-4626)</h3>
+            <label>Deposit amount</label>
+            <input id="depositAmount" type="number" step="0.0001" placeholder="100" />
+            <button id="depositButton" class="full-width">Deposit</button>
+          </div>
+        </div>
+      </section>
+
+      
+      <section class="card">
+        <h2>DAO Hub</h2>
+        <div class="subgrid">
+          <div class="action-box">
+            <h3>Governance token</h3>
+            <div class="field"><span>Your balance</span><span id="tokenBalance">-</span></div>
+            <div class="field"><span>Voting power</span><span id="votingPower">-</span></div>
+            <div class="field"><span>Delegated to</span><span id="delegateAddress">-</span></div>
+            <label>Delegate to <input id="delegateInput" type="text" placeholder="0x..." /></label>
+            <button id="delegateButton" class="full-width">Delegate votes</button>
+          </div>
+          <div class="action-box">
+            <h3>Proposals</h3>
+            <div id="proposalList">Loading proposals...</div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <section class="card">
+      <h2>Subgraph Data</h2>
+      <label>GraphQL endpoint
+        <input id="subgraphEndpoint" type="url" placeholder="https://api.studio.thegraph.com/query/..." />
+      </label>
+      <button id="refreshGraph">Load latest swaps</button>
+      <div id="graphResult" class="small-message">Enter endpoint and refresh</div>
+    </section>
+
+    <section class="card">
+      <h2>Messages & Events</h2>
+      <div id="messagePanel">Ready</div>
+    </section>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.12.0/dist/ethers.umd.min.js"></script>
+  <script src="https://unpkg.com/@walletconnect/web3-provider/dist/umd/index.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
