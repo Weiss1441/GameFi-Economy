@@ -1,13 +1,14 @@
 const REQUIRED_CHAIN_ID = 421614;
 
 const config = {
-  governanceToken: '0x9cA7f64EC9bC3592510f5da07ab7004696De0A38',
-  gameGovernor: '0x513a9341B3C1CfBb23Dce5C8104D6cE84B61116E',
-  resourceAmm: '0x57eD2c4971c019Ab120fbD6439E336C87CD56166',
-  gameVault: '0xCC19E02C1A6a97456D942a471516b44a084aA361',
-  gameItems: '0xD80D1Ee0ba43f8a38041D636a03E433019AB2050',
-  gameParameters: '0x5c2ea5cd66610E12c9DbBe2eCaD0C8cBA47eD81C',
-  rentalVault: '0x1053F2451536ec532CEe8f7D330d76E6e59180A4',
+  governanceToken: '0x7b40DDd2fEb9168A2e1Dff1524A59441B0F3A5c8',
+  gameGovernor: '0x39584a56ec8cb47FADD573C389c91d6Bf94586f5',
+  resourceAmm: '0xf44C26D7849D34C31beFc1618f844B2946098B7d',
+  gameVault: '0xd9338ccb63FF248525b34d1ace299b6a194e8480',
+  gameItems: '0x28e7C7E48a5c5108a34db251B0e6880456555947',
+  lootBoxVrf: '0xb28C1C983Bb584cA4Ff3D9F381Cb23fC5bF0392A',
+  gameParameters: '0x1ff9801346d12158fd95bc6ef2084b7fe707b53f',
+  rentalVault: '0x33521d8103eb074Fb8c57f42C399E02c4021d408',
   rpc: {
     421614: 'https://sepolia-rollup.arbitrum.io/rpc'
   },
@@ -26,10 +27,9 @@ const abis = {
     'function delegates(address) view returns (address)'
   ],
   governor: [
-    'function proposalCount() view returns (uint256)',
-    'function proposalDetailsAt(uint256) view returns (uint256 proposalId, address[] targets, uint256[] values, bytes[] calldatas, bytes32 descriptionHash)',
     'function state(uint256) view returns (uint8)',
-    'function castVote(uint256,uint8) returns (uint256)'
+    'function castVote(uint256,uint8) returns (uint256)',
+    'event ProposalCreated(uint256 proposalId, address proposer, address[] targets, uint256[] values, string[] signatures, bytes[] calldatas, uint256 voteStart, uint256 voteEnd, string description)'
   ],
   resourceAmm: [
     'function tokenA() view returns (address)',
@@ -56,6 +56,12 @@ const abis = {
     'function deposit(uint256 tokenId, uint256 amount) external',
     'function rent(uint256 tokenId, address renter, uint256 duration) external',
     'function isRented(uint256) view returns (bool)'
+  ],
+  lootBoxVrf: [
+    'function requestLoot() returns (uint256 requestId)',
+    'function requests(uint256) view returns (address user, bool fulfilled)',
+    'event LootRequested(address indexed user, uint256 indexed requestId)',
+    'event LootMinted(address indexed user, uint256 itemId, uint256 rarity)'
   ]
 };
 
@@ -92,7 +98,10 @@ const elements = {
   depositItemButton: document.getElementById('depositItemButton'),
   rentItemButton: document.getElementById('rentItemButton'),
   inventoryList: document.getElementById('inventoryList'),
-  availableItemsList: document.getElementById('availableItemsList')
+  availableItemsList: document.getElementById('availableItemsList'),
+  lootButton: document.getElementById('lootButton'),
+  lastLootRequest: document.getElementById('lastLootRequest'),
+  lootResult: document.getElementById('lootResult')
 };
 
 let provider = null;
@@ -107,8 +116,17 @@ const providerContracts = {
   amm: null,
   vault: null,
   gameItems: null,
-  rentalVault: null
+  rentalVault: null,
+  lootBoxVrf: null
 };
+
+const itemCatalog = [
+  { id: 1, name: 'Wooden Sword', detail: 'Common starter weapon' },
+  { id: 2, name: 'Health Potion', detail: 'Common consumable' },
+  { id: 3, name: 'Iron Armor', detail: 'Rare defensive item' },
+  { id: 4, name: 'Dragon Scale', detail: 'Legendary loot drop' },
+  { id: 5, name: 'Mystery Chest', detail: 'Mystic reward chest' }
+];
 
 function setMessage(text, type = 'info') {
   if (!elements.messagePanel) return;
@@ -146,6 +164,22 @@ function formatBig(value, decimals = 18) {
   }
 }
 
+async function getTxOverrides() {
+  if (!provider) return {};
+  try {
+    const gasPriceHex = await provider.send('eth_gasPrice', []);
+    if (gasPriceHex) {
+      const gasPrice = BigInt(gasPriceHex);
+      return {
+        gasPrice: (gasPrice * 12n) / 10n + 1n
+      };
+    }
+  } catch (error) {
+    console.warn('Failed to estimate fee overrides', error);
+  }
+  return {};
+}
+
 function getStateLabel(state) {
   const mapping = { 0: 'Pending', 1: 'Active', 2: 'Canceled', 3: 'Defeated', 4: 'Succeeded', 5: 'Queued', 6: 'Expired', 7: 'Executed' };
   return mapping[state] ?? `State ${state}`;
@@ -158,6 +192,9 @@ async function initializeContracts() {
   providerContracts.vault = new ethers.Contract(config.gameVault, abis.vault, provider);
   providerContracts.gameItems = new ethers.Contract(config.gameItems, abis.gameItems, provider);
   providerContracts.rentalVault = new ethers.Contract(config.rentalVault, abis.rentalVault, provider);
+  providerContracts.lootBoxVrf = ethers.isAddress(config.lootBoxVrf) && config.lootBoxVrf !== ethers.ZeroAddress
+    ? new ethers.Contract(config.lootBoxVrf, abis.lootBoxVrf, provider)
+    : null;
 }
 
 async function checkNetwork() {
@@ -217,23 +254,32 @@ function updateUIConnected() {
 }
 
 function setButtonsEnabled(enabled) {
-  const btns = [elements.depositButton, elements.swapButton, elements.delegateButton, elements.refreshGraph, elements.craftButton, elements.depositItemButton, elements.rentItemButton];
+  const btns = [elements.depositButton, elements.swapButton, elements.delegateButton, elements.refreshGraph, elements.craftButton, elements.depositItemButton, elements.rentItemButton, elements.lootButton];
   btns.forEach(btn => { if (btn) btn.disabled = !enabled; });
+  if (enabled && elements.lootButton && !providerContracts.lootBoxVrf) {
+    elements.lootButton.disabled = true;
+    if (elements.lootResult) elements.lootResult.textContent = 'LootBoxVRF address is not configured yet.';
+  }
 }
 
 async function loadInventory() {
   if (!elements.inventoryList) return;
-  
-  const demoItems = [
-    { name: 'Wooden Sword', balance: 3, id: 1 },
-    { name: 'Health Potion', balance: 5, id: 2 },
-    { name: 'Iron Armor', balance: 1, id: 3 }
-  ];
-  
-  elements.inventoryList.innerHTML = demoItems.map(item => `
+  if (!providerContracts.gameItems || !userAddress) {
+    elements.inventoryList.textContent = 'Connect wallet to view items';
+    return;
+  }
+
+  const balances = await Promise.all(
+    itemCatalog.map(async item => ({
+      ...item,
+      balance: await providerContracts.gameItems.balanceOf(userAddress, item.id)
+    }))
+  );
+
+  elements.inventoryList.innerHTML = balances.map(item => `
     <div class="inventory-item">
       <span>${item.name}</span>
-      <span>Quantity: ${item.balance}</span>
+      <span>Quantity: ${item.balance.toString()}</span>
     </div>
   `).join('');
 }
@@ -241,20 +287,25 @@ async function loadInventory() {
 async function loadAvailableItems() {
   if (!elements.availableItemsList) return;
   
-  const availableItems = [
-    { id: 1, name: 'Wooden Sword', price: '2x Iron Ore + 1x Wood', rarity: 'Common' },
-    { id: 2, name: 'Health Potion', price: '3x Herb + 1x Bottle', rarity: 'Common' },
-    { id: 3, name: 'Iron Armor', price: '5x Iron Ore + 2x Leather', rarity: 'Rare' },
-    { id: 4, name: 'Dragon Scale', price: 'Mystery Drop', rarity: 'Legendary' },
-    { id: 5, name: 'Mystery Chest', price: '100x Gold', rarity: 'Mystic' }
-  ];
-  
-  elements.availableItemsList.innerHTML = availableItems.map(item => `
+  elements.availableItemsList.innerHTML = itemCatalog.map(item => `
     <div class="inventory-item">
       <span>${item.name} (ID: ${item.id})</span>
-      <span style="font-size:11px; color:#aaa;">${item.price}</span>
+      <span style="font-size:11px; color:#aaa;">${item.detail}</span>
     </div>
   `).join('');
+}
+
+function watchLootEvents() {
+  if (!providerContracts.lootBoxVrf || !userAddress) return;
+  providerContracts.lootBoxVrf.removeAllListeners('LootMinted');
+  providerContracts.lootBoxVrf.on('LootMinted', async (user, itemId, rarity) => {
+    if (user.toLowerCase() !== userAddress.toLowerCase()) return;
+    if (elements.lootResult) {
+      elements.lootResult.textContent = `Loot minted: item #${itemId.toString()}, rarity roll ${rarity.toString()}.`;
+    }
+    setMessage('Random loot fulfilled by Chainlink VRF.', 'success');
+    await loadInventory();
+  });
 }
 
 async function loadUserData() {
@@ -298,18 +349,18 @@ async function loadProposals() {
     return; 
   }
   try {
-    const count = Number(await providerContracts.governor.proposalCount());
-    if (count === 0) { 
+    const filter = providerContracts.governor.filters.ProposalCreated();
+    const events = await providerContracts.governor.queryFilter(filter, -50000);
+    if (!events.length) { 
       elements.proposalList.textContent = 'No proposals available.'; 
       return; 
     }
-    const max = Math.min(5, count);
+    const recentEvents = events.slice(-5).reverse();
     elements.proposalList.innerHTML = '';
     
-    for (let i = 0; i < max; i++) {
-      const details = await providerContracts.governor.proposalDetailsAt(i);
-      const proposalId = details.proposalId;
-      const targets = details.targets;
+    for (const event of recentEvents) {
+      const proposalId = event.args.proposalId;
+      const targets = event.args.targets || [];
       const stateId = await providerContracts.governor.state(proposalId);
       const stateLabel = getStateLabel(Number(stateId));
       
@@ -415,13 +466,13 @@ async function handleDeposit() {
     
     if (allowance < amount) {
       setStatus('Approving vault...');
-      const approval = await tokenContract.approve(config.gameVault, amount);
+      const approval = await tokenContract.approve(config.gameVault, amount, await getTxOverrides());
       await approval.wait();
     }
     
     setStatus('Depositing...');
     const vaultWithSigner = providerContracts.vault.connect(signer);
-    const tx = await vaultWithSigner.deposit(amount, userAddress);
+    const tx = await vaultWithSigner.deposit(amount, userAddress, await getTxOverrides());
     await tx.wait();
     setMessage('Deposit confirmed.', 'success');
     await loadUserData();
@@ -447,7 +498,7 @@ async function handleSwap() {
     
     if (allowance < amount) {
       setStatus('Approving AMM...');
-      const approval = await dexToken.approve(config.resourceAmm, amount);
+      const approval = await dexToken.approve(config.resourceAmm, amount, await getTxOverrides());
       await approval.wait();
     }
     
@@ -457,7 +508,7 @@ async function handleSwap() {
     const minAmountOut = estimated ? (BigInt(estimated) * 98n) / 100n : 0n;
     
     setStatus('Swapping...');
-    const tx = await amm.swap(tokenA, tokenB, amount, minAmountOut);
+    const tx = await amm.swap(tokenA, tokenB, amount, minAmountOut, await getTxOverrides());
     await tx.wait();
     setMessage('Swap confirmed.', 'success');
     await loadProtocolData();
@@ -473,7 +524,7 @@ async function handleDelegate() {
   try {
     setStatus('Delegating...');
     const tokenWithSigner = providerContracts.token.connect(signer);
-    const tx = await tokenWithSigner.delegate(delegatee);
+    const tx = await tokenWithSigner.delegate(delegatee, await getTxOverrides());
     await tx.wait();
     setMessage('Delegate confirmed.', 'success');
     await loadUserData();
@@ -489,7 +540,7 @@ async function handleCraft() {
     setStatus('Crafting...');
     const ingredients = [1n, 2n];
     const gameItemsWithSigner = providerContracts.gameItems.connect(signer);
-    const tx = await gameItemsWithSigner.craft(ingredients, BigInt(recipeId));
+    const tx = await gameItemsWithSigner.craft(ingredients, BigInt(recipeId), await getTxOverrides());
     await tx.wait();
     setMessage(`Craft successful, item ${recipeId} created.`, 'success');
     await loadInventory();
@@ -509,13 +560,13 @@ async function handleDepositItem() {
     
     if (!isApproved) {
       setStatus('Approving rental vault...');
-      const approveTx = await gameItemsWithSigner.setApprovalForAll(config.rentalVault, true);
+      const approveTx = await gameItemsWithSigner.setApprovalForAll(config.rentalVault, true, await getTxOverrides());
       await approveTx.wait();
     }
     
     setStatus('Depositing item...');
     const rentalWithSigner = providerContracts.rentalVault.connect(signer);
-    const tx = await rentalWithSigner.deposit(BigInt(tokenId), BigInt(amount));
+    const tx = await rentalWithSigner.deposit(BigInt(tokenId), BigInt(amount), await getTxOverrides());
     await tx.wait();
     setMessage('Item deposited to rental vault.', 'success');
     await loadInventory();
@@ -531,10 +582,43 @@ async function handleRentItem() {
     setStatus('Renting item...');
     const renterAddress = "0x0000000000000000000000000000000000000789";
     const rentalWithSigner = providerContracts.rentalVault.connect(signer);
-    const tx = await rentalWithSigner.rent(BigInt(tokenId), renterAddress, 86400n);
+    const tx = await rentalWithSigner.rent(BigInt(tokenId), renterAddress, 86400n, await getTxOverrides());
     await tx.wait();
     setMessage('Item rented successfully.', 'success');
   } catch (error) { setMessage('Rent failed: ' + getErrorMessage(error), 'error'); } finally { setStatus('Ready'); }
+}
+
+async function handleRequestLoot() {
+  if (!providerContracts.lootBoxVrf) {
+    setMessage('LootBoxVRF is not deployed/configured in frontend config.', 'error');
+    return;
+  }
+  if (!signer) { setMessage('Connect wallet first.', 'error'); return; }
+  if (!(await checkNetwork())) { setMessage('Switch to the required network.', 'error'); return; }
+  try {
+    setStatus('Requesting VRF loot...');
+    if (elements.lootResult) elements.lootResult.textContent = 'Request sent. Waiting for transaction confirmation...';
+    const lootWithSigner = providerContracts.lootBoxVrf.connect(signer);
+    const tx = await lootWithSigner.requestLoot(await getTxOverrides());
+    const receipt = await tx.wait();
+
+    let requestId = null;
+    for (const log of receipt.logs) {
+      try {
+        const parsed = providerContracts.lootBoxVrf.interface.parseLog(log);
+        if (parsed?.name === 'LootRequested') requestId = parsed.args.requestId;
+      } catch {}
+    }
+
+    if (requestId && elements.lastLootRequest) elements.lastLootRequest.textContent = requestId.toString();
+    if (elements.lootResult) elements.lootResult.textContent = 'VRF request confirmed. Fulfillment can take a few minutes.';
+    setMessage('Loot request confirmed. Wait for Chainlink fulfillment.', 'success');
+  } catch (error) {
+    setMessage('Loot request failed: ' + getErrorMessage(error), 'error');
+    if (elements.lootResult) elements.lootResult.textContent = getErrorMessage(error);
+  } finally {
+    setStatus('Ready');
+  }
 }
 
 function getErrorMessage(error) {
@@ -587,6 +671,7 @@ async function postConnect() {
     await loadProtocolData();
     await loadProposals();
     await fetchSubgraph();
+    watchLootEvents();
   }
 }
 
@@ -601,6 +686,7 @@ function setupEventListeners() {
   elements.craftButton?.addEventListener('click', handleCraft);
   elements.depositItemButton?.addEventListener('click', handleDepositItem);
   elements.rentItemButton?.addEventListener('click', handleRentItem);
+  elements.lootButton?.addEventListener('click', handleRequestLoot);
   
   if (elements.subgraphEndpoint) elements.subgraphEndpoint.value = config.graphDefault;
   

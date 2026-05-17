@@ -3,6 +3,7 @@ pragma solidity ^0.8.25;
 
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
+
 import "@openzeppelin/contracts/governance/TimelockController.sol";
 import "@openzeppelin/contracts/governance/utils/IVotes.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
@@ -15,70 +16,81 @@ import "../src/factory/GameFactory.sol";
 import "../src/governance/GovernanceToken.sol";
 import "../src/governance/GameGovernor.sol";
 import "../src/governance/GameTimelock.sol";
+import "../src/vrf/LootBoxVRF.sol";
 import "../src/vault/GameVaultV1.sol";
 import "../src/vault/GameVaultV2.sol";
 
 contract DeployFull is Script {
     function run() external {
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(deployerPrivateKey);
+        uint256 pk = vm.envUint("PRIVATE_KEY");
 
-        GameParameters gameParams = new GameParameters();
-        console.log("GameParameters deployed at:", address(gameParams));
+        vm.startBroadcast(pk);
 
-        GameItems gameItems = new GameItems("Game Items", "GITEMS", address(gameParams));
-        console.log("GameItems deployed at:", address(gameItems));
+        GameParameters params = new GameParameters();
 
-        RentalVault rentalVault = new RentalVault(address(gameItems));
-        console.log("RentalVault deployed at:", address(rentalVault));
+        GameItems items = new GameItems(
+            "Game Items",
+            "GITEMS",
+            address(params)
+        );
 
-        GovernanceToken token = new GovernanceToken();
-        console.log("GovernanceToken deployed at:", address(token));
+        LootBoxVRF lootBox = new LootBoxVRF(
+            vm.envAddress("VRF_COORDINATOR"),
+            vm.envUint("VRF_SUBSCRIPTION_ID"),
+            vm.envBytes32("VRF_KEY_HASH"),
+            address(items)
+        );
 
-        GovernanceToken tokenB = new GovernanceToken();
-        console.log("GovernanceToken B deployed at:", address(tokenB));
+        items.grantRole(items.VRF_ROLE(), address(lootBox));
 
-        address deployer = vm.addr(deployerPrivateKey);
-        address[] memory proposers = new address[](0);
-        address[] memory executors = new address[](0);
+        RentalVault rental = new RentalVault(address(items));
 
-        GameTimelock timelock = new GameTimelock(2 days, proposers, executors, deployer);
-        console.log("GameTimelock deployed at:", address(timelock));
+        GovernanceToken gov = new GovernanceToken();
+        GovernanceToken govB = new GovernanceToken();
+        GameTimelock timelock = new GameTimelock(
+            2 days,
+            new address[](0),
+            new address[](0),
+            vm.addr(pk)
+        );
 
-        GameGovernor governor = new GameGovernor(IVotes(address(token)), TimelockController(payable(address(timelock))));
-        console.log("GameGovernor deployed at:", address(governor));
+        GameGovernor governor = new GameGovernor(
+            IVotes(address(gov)),
+            TimelockController(payable(address(timelock)))
+        );
 
         timelock.grantRole(timelock.PROPOSER_ROLE(), address(governor));
         timelock.grantRole(timelock.EXECUTOR_ROLE(), address(0));
-        timelock.revokeRole(timelock.DEFAULT_ADMIN_ROLE(), msg.sender);
 
-        GameVaultV1 implementationV1 = new GameVaultV1();
+        GameVaultV1 impl = new GameVaultV1();
+
         bytes memory initData = abi.encodeWithSelector(
             GameVaultV1.initialize.selector,
-            address(token),
+            address(gov),
             "GameFi Vault Shares",
             "vGFI",
             500,
-            deployer,
+            vm.addr(pk),
             0
         );
-        ERC1967Proxy vaultProxy = new ERC1967Proxy(address(implementationV1), initData);
-        console.log("GameVault proxy deployed at:", address(vaultProxy));
-        console.log("GameVault V1 implementation deployed at:", address(implementationV1));
 
-        GameVaultV1 vaultV1 = GameVaultV1(address(vaultProxy));
-        GameVaultV2 implementationV2 = new GameVaultV2();
-        vaultV1.upgradeToAndCall(address(implementationV2), "");
-        console.log("GameVault V2 implementation deployed at:", address(implementationV2));
+        ERC1967Proxy vault = new ERC1967Proxy(address(impl), initData);
 
-        
-        ResourceAMM amm = new ResourceAMM(address(token), address(tokenB));
-        console.log("ResourceAMM deployed at:", address(amm));
+        GameVaultV2 implV2 = new GameVaultV2();
+        GameVaultV1(address(vault)).upgradeToAndCall(address(implV2), "");
 
-        
+        ResourceAMM amm = new ResourceAMM(address(gov), address(govB));
+
         GameFactory factory = new GameFactory();
-        console.log("GameFactory deployed at:", address(factory));
 
         vm.stopBroadcast();
+
+        console.log("LootBoxVRF:", address(lootBox));
+        console.log("GameItems:", address(items));
+        console.log("RentalVault:", address(rental));
+        console.log("Governor:", address(governor));
+        console.log("Vault:", address(vault));
+        console.log("AMM:", address(amm));
+        console.log("Factory:", address(factory));
     }
 }
