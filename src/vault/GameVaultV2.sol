@@ -18,6 +18,7 @@ contract GameVaultV2 is GameVaultV1 {
         if (reserveRatioBps_ > MAX_RESERVE_RATIO_BPS) {
             revert ReserveRatioTooHigh(reserveRatioBps_, MAX_RESERVE_RATIO_BPS);
         }
+        emit ReserveRatioUpdated(reserveRatioBps, reserveRatioBps_);
         reserveRatioBps = reserveRatioBps_;
     }
 

@@ -111,8 +111,7 @@ contract GameVaultV1 is Initializable, ERC4626Upgradeable, OwnableUpgradeable, U
     }
 
     function getProjectedAssets(uint256 assets, uint256 timeElapsed) public view returns (uint256) {
-        uint256 yearlyYield = (assets * yieldRate) / 10000;
-        uint256 proportionalYield = (yearlyYield * timeElapsed) / 365 days;
+        uint256 proportionalYield = (assets * yieldRate * timeElapsed) / (10000 * 365 days);
         return assets + proportionalYield;
     }
 

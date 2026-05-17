@@ -25,6 +25,8 @@ contract RentalVault is Ownable, ReentrancyGuard, ERC1155Holder, IRentalVault {
     event NFTRented(uint256 indexed tokenId, address indexed owner, address indexed renter, uint256 expiry);
     event NFTReclaimed(uint256 indexed tokenId, address indexed owner);
     event NFTReturned(uint256 indexed tokenId, address indexed renter);
+    event DefaultRentalDurationUpdated(uint256 oldDuration, uint256 newDuration);
+    event RentalFeeUpdated(uint256 oldFee, uint256 newFee);
 
     constructor(address _gameItems) Ownable(msg.sender) {
         gameItems = IERC1155(_gameItems);
@@ -85,10 +87,12 @@ contract RentalVault is Ownable, ReentrancyGuard, ERC1155Holder, IRentalVault {
     }
 
     function setDefaultRentalDuration(uint256 _duration) external onlyOwner {
+        emit DefaultRentalDurationUpdated(defaultRentalDuration, _duration);
         defaultRentalDuration = _duration;
     }
 
     function setRentalFee(uint256 _fee) external onlyOwner {
+        emit RentalFeeUpdated(rentalFee, _fee);
         rentalFee = _fee;
     }
 }

@@ -42,9 +42,10 @@ contract PriceFeedOracle is Ownable, IPriceFeedOracle {
     }
 
     function getLatestPrice() public view override returns (int256 price, uint8 decimals) {
-        (uint80 roundId, int256 answer,, uint256 updatedAt, uint80 answeredInRound) = feed.latestRoundData();
+        (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound) =
+            feed.latestRoundData();
 
-        if (roundId == 0 || answeredInRound == 0) revert InvalidPrice(answer);
+        if (roundId == 0 || startedAt == 0 || answeredInRound == 0) revert InvalidPrice(answer);
         if (answer <= 0) revert InvalidPrice(answer);
         if (block.timestamp - updatedAt > maxStalenessSeconds) {
             revert StalePrice(updatedAt, maxStalenessSeconds);
