@@ -5,9 +5,9 @@ const config = {
   gameGovernor: '0x39584a56ec8cb47FADD573C389c91d6Bf94586f5',
   resourceAmm: '0xf44C26D7849D34C31beFc1618f844B2946098B7d',
   gameVault: '0xd9338ccb63FF248525b34d1ace299b6a194e8480',
-  gameItems: '0x28e7C7E48a5c5108a34db251B0e6880456555947',
-  lootBoxVrf: '0xb28C1C983Bb584cA4Ff3D9F381Cb23fC5bF0392A',
-  gameParameters: '0x1ff9801346d12158fd95bc6ef2084b7fe707b53f',
+  gameItems: '0x6561Fb13599F81C85cE1b89a7d49deEd2Bcc8259',
+  lootBoxVrf: '0xB22548BC8c1a1e4eaE0B5DDD1Be646C695dD467f',
+  gameParameters: '0x0899c43467822b35A316D18b7e1aC579b41656E3',
   rentalVault: '0x33521d8103eb074Fb8c57f42C399E02c4021d408',
   rpc: {
     421614: 'https://sepolia-rollup.arbitrum.io/rpc'
