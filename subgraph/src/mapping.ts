@@ -27,8 +27,10 @@ export function handleSwap(event: SwapEvent): void {
   swap.timestamp = event.block.timestamp;
   swap.save();
 
- 
-  let userStat = getOrCreateUserStat(event.params.user.toHex(), event.block.timestamp);
+  let userStat = getOrCreateUserStat(
+    event.params.user.toHex(),
+    event.block.timestamp,
+  );
   userStat.totalSwaps = userStat.totalSwaps.plus(BigInt.fromI32(1));
   userStat.totalVolumeIn = userStat.totalVolumeIn.plus(event.params.amountIn);
   userStat.lastActiveAt = event.block.timestamp;
@@ -55,7 +57,10 @@ export function handleVote(event: VoteCastEvent): void {
   vote.reason = event.params.reason;
   vote.save();
 
-  let userStat = getOrCreateUserStat(event.params.voter.toHex(), event.block.timestamp);
+  let userStat = getOrCreateUserStat(
+    event.params.voter.toHex(),
+    event.block.timestamp,
+  );
   userStat.totalVotes = userStat.totalVotes.plus(BigInt.fromI32(1));
   userStat.lastActiveAt = event.block.timestamp;
   userStat.save();

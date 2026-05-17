@@ -25,7 +25,6 @@ dataSources:
           handler: handleSwap
       file: ./src/mapping.ts
 
-
   - kind: ethereum
     name: GameVault
     network: arbitrum-sepolia
@@ -46,7 +45,6 @@ dataSources:
         - event: Transfer(indexed address,indexed address,uint256)
           handler: handleTransfer
       file: ./src/mapping.ts
-
 
   - kind: ethereum
     name: GameGovernor

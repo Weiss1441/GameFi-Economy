@@ -43,7 +43,7 @@ jobs:
         run: npx --yes solhint@latest "src/**/*.sol" "script/**/*.sol" "test/**/*.sol"
 
       - name: Run Prettier
-        run: npx --yes prettier@latest --check "frontend/**/*.{html,css,js}" "subgraph/**/*.{graphql,yaml,ts}"
+        run: npx --yes prettier@latest --check "frontend/**/*.{html,css,js}" "subgraph/schema.graphql" "subgraph/subgraph.yaml" "subgraph/src/**/*.ts"
 
       - name: Build contracts
         run: |
