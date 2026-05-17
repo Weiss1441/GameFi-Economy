@@ -91,14 +91,16 @@ forge coverage
 
 # Verified contracts links
 
-- GameParameters - https://sepolia.arbiscan.io/address/0x5c2ea5cd66610E12c9DbBe2eCaD0C8cBA47eD81C
-- GameItems - https://sepolia.arbiscan.io/address/0xD80D1Ee0ba43f8a38041D636a03E433019AB2050
-- RentalVault - https://sepolia.arbiscan.io/address/0x1053F2451536ec532CEe8f7D330d76E6e59180A4
-- GovernanceToken - https://sepolia.arbiscan.io/address/0x9cA7f64EC9bC3592510f5da07ab7004696De0A38
-- GovernanceToken B - https://sepolia.arbiscan.io/address/0x28488689a2586A9fD3d9da51187C465c9d452240
-- GameTimelock - https://sepolia.arbiscan.io/address/0x217f2DaB51fCbb5B1832b503Acab281DAf9984B8
-- GameGovernor - https://sepolia.arbiscan.io/address/0x513a9341B3C1CfBb23Dce5C8104D6cE84B61116E
-- GameVault V1 Implementation - https://sepolia.arbiscan.io/address/0x74c81daB6653e598C160b34f67eb4F3946F0Cf69
-- GameVault V2 Implementation - https://sepolia.arbiscan.io/address/0xCc600591c8F71F09b9D8162aa94f48a0FbF91535
-- ResourceAMM - https://sepolia.arbiscan.io/address/0x57eD2c4971c019Ab120fbD6439E336C87CD56166
-- GameFactory - https://sepolia.arbiscan.io/address/0x489c16De80001AF2326f20490065209aa65d0538
+- GameParameters - https://sepolia.arbiscan.io/address/0x9AD99854cB4d757a5C684d3951ebCB9edbdA7906
+- GameItems - https://sepolia.arbiscan.io/address/0x7ECFB17fae78476Cc0A6Ca7239e87B8C40B61406
+- LootBoxVRF - https://sepolia.arbiscan.io/address/0x2B2C850b9094FFF0f2d814BC79ae696b0cBb6006
+- RentalVault - https://sepolia.arbiscan.io/address/0x78Af981075BaA5F9d64f84cEC26A9970C9B4404A
+- GovernanceToken - https://sepolia.arbiscan.io/address/0x0b437CD552a192A0662B08dc843cC2CaD8704a9c
+- SwapTokenB - https://sepolia.arbiscan.io/address/0xfa1C556d095F4d1577F4D53c94C35EF2CF782494
+- GameTimelock - https://sepolia.arbiscan.io/address/0xe26E6C5Cb47167627d6bC24705ddDc5a6ec22ACE
+- GameGovernor - https://sepolia.arbiscan.io/address/0x95bA2074cd84ea48aAa3DC553e663d98b9a756A4
+- GameVault Proxy - https://sepolia.arbiscan.io/address/0xb2572c83406a0824B8557AAFb9FC037070d82041
+- GameVault V1 Implementation - https://sepolia.arbiscan.io/address/0xaB2787995106E2fd488f5D9B149d0a4232553357
+- GameVault V2 Implementation - https://sepolia.arbiscan.io/address/0xCA232C9AE5033f5FaAb2430841C10dBA22Ac8fF3
+- ResourceAMM - https://sepolia.arbiscan.io/address/0xB9d86f7faDDC177C41E1d3de8a7a21127a8018D2
+- GameFactory - https://sepolia.arbiscan.io/address/0x2B5B6A06a8f91bd39FDb6B0091388f2B4aBC7e7A

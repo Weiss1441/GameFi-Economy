@@ -39,7 +39,12 @@ contract GameItems is ERC1155, AccessControl, IGameItems {
     }
 
     function mintFromVRF(address to, uint256 id) external onlyRole(VRF_ROLE) {
-        _mint(to, id, 1, "");
+        require(to != address(0), "Invalid receiver");
+        uint256[] memory ids = new uint256[](1);
+        uint256[] memory values = new uint256[](1);
+        ids[0] = id;
+        values[0] = 1;
+        _update(address(0), to, ids, values);
     }
 
     function mint(address to, uint256 id, uint256 amount, bytes memory data)
@@ -66,7 +71,11 @@ contract GameItems is ERC1155, AccessControl, IGameItems {
             _burn(msg.sender, ingredients[i], 1);
         }
 
-        _mint(msg.sender, resultId, 1, "");
+        uint256[] memory resultIds = new uint256[](1);
+        uint256[] memory resultValues = new uint256[](1);
+        resultIds[0] = resultId;
+        resultValues[0] = 1;
+        _update(address(0), msg.sender, resultIds, resultValues);
         return 1;
     }
 

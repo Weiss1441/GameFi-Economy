@@ -1,14 +1,14 @@
 const REQUIRED_CHAIN_ID = 421614;
 
 const config = {
-  governanceToken: '0x7b40DDd2fEb9168A2e1Dff1524A59441B0F3A5c8',
-  gameGovernor: '0x39584a56ec8cb47FADD573C389c91d6Bf94586f5',
-  resourceAmm: '0xf44C26D7849D34C31beFc1618f844B2946098B7d',
-  gameVault: '0xd9338ccb63FF248525b34d1ace299b6a194e8480',
-  gameItems: '0x6561Fb13599F81C85cE1b89a7d49deEd2Bcc8259',
-  lootBoxVrf: '0xB22548BC8c1a1e4eaE0B5DDD1Be646C695dD467f',
-  gameParameters: '0x0899c43467822b35A316D18b7e1aC579b41656E3',
-  rentalVault: '0x33521d8103eb074Fb8c57f42C399E02c4021d408',
+  governanceToken: '0x0b437CD552a192A0662B08dc843cC2CaD8704a9c',
+  gameGovernor: '0x95bA2074cd84ea48aAa3DC553e663d98b9a756A4',
+  resourceAmm: '0xB9d86f7faDDC177C41E1d3de8a7a21127a8018D2',
+  gameVault: '0xb2572c83406a0824B8557AAFb9FC037070d82041',
+  gameItems: '0x7ECFB17fae78476Cc0A6Ca7239e87B8C40B61406',
+  lootBoxVrf: '0x2B2C850b9094FFF0f2d814BC79ae696b0cBb6006',
+  gameParameters: '0x9AD99854cB4d757a5C684d3951ebCB9edbdA7906',
+  rentalVault: '0x78Af981075BaA5F9d64f84cEC26A9970C9B4404A',
   rpc: {
     421614: 'https://sepolia-rollup.arbitrum.io/rpc'
   },
@@ -22,6 +22,7 @@ const abis = {
     'function balanceOf(address) view returns (uint256)',
     'function allowance(address,address) view returns (uint256)',
     'function approve(address,uint256) returns (bool)',
+    'function testMint()',
     'function delegate(address)',
     'function getVotes(address) view returns (uint256)',
     'function delegates(address) view returns (address)'
@@ -37,7 +38,9 @@ const abis = {
     'function reserveA() view returns (uint256)',
     'function reserveB() view returns (uint256)',
     'function getAmountOut(uint256,address,address) view returns (uint256)',
-    'function swap(address,address,uint256,uint256) returns (uint256)'
+    'function addLiquidity(uint256,uint256) returns (uint256)',
+    'function swap(address,address,uint256,uint256) returns (uint256)',
+    'event Swap(address indexed user, address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOut)'
   ],
   vault: [
     'function asset() view returns (address)',
@@ -47,11 +50,13 @@ const abis = {
   gameItems: [
     'function balanceOf(address,uint256) view returns (uint256)',
     'function uri(uint256) view returns (string)',
+    'function craftingRecipes(uint256,uint256) view returns (uint256)',
     'function craft(uint256[] ingredients, uint256 recipeId) returns (uint256)',
     'function setApprovalForAll(address operator, bool approved) external',
     'function isApprovedForAll(address account, address operator) view returns (bool)'
   ],
   rentalVault: [
+    'function gameItems() view returns (address)',
     'function depositedAmounts(uint256) view returns (uint256)',
     'function deposit(uint256 tokenId, uint256 amount) external',
     'function rent(uint256 tokenId, address renter, uint256 duration) external',
@@ -78,9 +83,16 @@ const elements = {
   vaultShares: document.getElementById('vaultShares'),
   reserveA: document.getElementById('reserveA'),
   reserveB: document.getElementById('reserveB'),
+  ammTokenABalance: document.getElementById('ammTokenABalance'),
+  ammTokenBBalance: document.getElementById('ammTokenBBalance'),
   vaultAsset: document.getElementById('vaultAsset'),
   depositAmount: document.getElementById('depositAmount'),
   swapAmount: document.getElementById('swapAmount'),
+  liquidityAmountA: document.getElementById('liquidityAmountA'),
+  liquidityAmountB: document.getElementById('liquidityAmountB'),
+  mintSwapTokensButton: document.getElementById('mintSwapTokensButton'),
+  addLiquidityButton: document.getElementById('addLiquidityButton'),
+  mintGovernanceButton: document.getElementById('mintGovernanceButton'),
   delegateInput: document.getElementById('delegateInput'),
   depositButton: document.getElementById('depositButton'),
   swapButton: document.getElementById('swapButton'),
@@ -93,10 +105,15 @@ const elements = {
   messagePanel: document.getElementById('messagePanel'),
   craftButton: document.getElementById('craftButton'),
   craftRecipeSelect: document.getElementById('craftRecipeSelect'),
+  craftRecipeInfo: document.getElementById('craftRecipeInfo'),
   rentalTokenId: document.getElementById('rentalTokenId'),
   rentalAmount: document.getElementById('rentalAmount'),
   depositItemButton: document.getElementById('depositItemButton'),
   rentItemButton: document.getElementById('rentItemButton'),
+  rentalStatus: document.getElementById('rentalStatus'),
+  rentalWalletBalance: document.getElementById('rentalWalletBalance'),
+  rentalDepositedBalance: document.getElementById('rentalDepositedBalance'),
+  governanceStatus: document.getElementById('governanceStatus'),
   inventoryList: document.getElementById('inventoryList'),
   availableItemsList: document.getElementById('availableItemsList'),
   lootButton: document.getElementById('lootButton'),
@@ -109,6 +126,11 @@ let signer = null;
 let userAddress = null;
 let currentChainId = null;
 let connectedProviderType = null;
+let vaultAssetAddress = null;
+let ammTokenAAddress = null;
+let ammTokenBAddress = null;
+let ammHasLiquidity = false;
+let rentalVaultCompatible = false;
 
 const providerContracts = {
   token: null,
@@ -128,6 +150,14 @@ const itemCatalog = [
   { id: 5, name: 'Mystery Chest', detail: 'Mystic reward chest' }
 ];
 
+const itemById = Object.fromEntries(itemCatalog.map(item => [item.id, item]));
+
+const craftRecipes = {
+  3: { resultId: 3, name: 'Iron Armor', ingredients: [4, 5] },
+  4: { resultId: 4, name: 'Dragon Scale', ingredients: [3, 5] },
+  5: { resultId: 5, name: 'Mystery Chest', ingredients: [2, 3] }
+};
+
 function setMessage(text, type = 'info') {
   if (!elements.messagePanel) return;
   elements.messagePanel.textContent = text;
@@ -141,6 +171,64 @@ function setStatus(text) {
 function formatAddress(address) {
   if (!address || address === '-') return '-';
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
+}
+
+function setAddressText(element, address, fallback = '-') {
+  if (!element) return;
+  if (!address || address === ethers.ZeroAddress) {
+    element.textContent = fallback;
+    element.removeAttribute('title');
+    return;
+  }
+  element.textContent = formatAddress(address);
+  element.title = address;
+  element.classList.add('inline-address');
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
+function renderAddress(address) {
+  if (!address || address === ethers.ZeroAddress) return '-';
+  return `<code class="inline-address" title="${escapeHtml(address)}">${formatAddress(address)}</code>`;
+}
+
+function getRecipeDescription(recipe) {
+  return recipe.ingredients
+    .map(id => `${itemById[id]?.name || `Item ${id}`} #${id}`)
+    .join(' + ');
+}
+
+function updateCraftRecipeInfo() {
+  if (!elements.craftRecipeInfo || !elements.craftRecipeSelect) return;
+  const recipe = craftRecipes[Number(elements.craftRecipeSelect.value)];
+  if (!recipe) {
+    elements.craftRecipeInfo.textContent = 'Select a recipe.';
+    return;
+  }
+  elements.craftRecipeInfo.textContent = `Creates ${recipe.name} #${recipe.resultId}. Requires ${getRecipeDescription(recipe)}.`;
+}
+
+async function getCraftIngredients(recipe) {
+  if (!providerContracts.gameItems) return recipe.ingredients;
+
+  const onchainIngredients = [];
+  for (let index = 0; index < 8; index++) {
+    try {
+      const ingredient = await providerContracts.gameItems.craftingRecipes(recipe.resultId, index);
+      onchainIngredients.push(Number(ingredient));
+    } catch {
+      break;
+    }
+  }
+
+  return onchainIngredients.length ? onchainIngredients : recipe.ingredients;
 }
 
 function setupCopyAddress() {
@@ -245,8 +333,7 @@ async function switchNetwork() {
 }
 
 function updateUIConnected() {
-  const displayAddress = userAddress ? formatAddress(userAddress) : '-';
-  if (elements.accountLabel) elements.accountLabel.textContent = displayAddress;
+  setAddressText(elements.accountLabel, userAddress, '-');
   const copyBtn = document.getElementById('copyAddressBtn');
   if (copyBtn) {
     copyBtn.style.display = userAddress ? 'inline-block' : 'none';
@@ -254,12 +341,35 @@ function updateUIConnected() {
 }
 
 function setButtonsEnabled(enabled) {
-  const btns = [elements.depositButton, elements.swapButton, elements.delegateButton, elements.refreshGraph, elements.craftButton, elements.depositItemButton, elements.rentItemButton, elements.lootButton];
+  const btns = [elements.depositButton, elements.swapButton, elements.delegateButton, elements.refreshGraph, elements.craftButton, elements.depositItemButton, elements.rentItemButton, elements.lootButton, elements.mintSwapTokensButton, elements.addLiquidityButton, elements.mintGovernanceButton];
   btns.forEach(btn => { if (btn) btn.disabled = !enabled; });
   if (enabled && elements.lootButton && !providerContracts.lootBoxVrf) {
     elements.lootButton.disabled = true;
     if (elements.lootResult) elements.lootResult.textContent = 'LootBoxVRF address is not configured yet.';
   }
+  if (enabled) {
+    if (elements.swapButton) elements.swapButton.disabled = !ammHasLiquidity;
+    if (elements.depositItemButton) elements.depositItemButton.disabled = !rentalVaultCompatible;
+    if (elements.rentItemButton) elements.rentItemButton.disabled = !rentalVaultCompatible;
+  }
+}
+
+function parsePositiveWholeBigInt(value, label) {
+  const normalized = String(value || '').trim();
+  if (!/^[0-9]+$/.test(normalized)) {
+    throw new Error(`${label} must be a whole positive number.`);
+  }
+  const parsed = BigInt(normalized);
+  if (parsed <= 0n) {
+    throw new Error(`${label} must be greater than 0.`);
+  }
+  return parsed;
+}
+
+function setGovernanceStatus(text, type = 'info') {
+  if (!elements.governanceStatus) return;
+  elements.governanceStatus.textContent = text;
+  elements.governanceStatus.style.color = type === 'error' ? '#ff9c9c' : type === 'success' ? 'var(--success)' : 'var(--muted)';
 }
 
 async function loadInventory() {
@@ -278,8 +388,8 @@ async function loadInventory() {
 
   elements.inventoryList.innerHTML = balances.map(item => `
     <div class="inventory-item">
-      <span>${item.name}</span>
-      <span>Quantity: ${item.balance.toString()}</span>
+      <span class="item-name">${item.name}</span>
+      <span class="item-balance">Qty ${item.balance.toString()}</span>
     </div>
   `).join('');
 }
@@ -289,8 +399,8 @@ async function loadAvailableItems() {
   
   elements.availableItemsList.innerHTML = itemCatalog.map(item => `
     <div class="inventory-item">
-      <span>${item.name} (ID: ${item.id})</span>
-      <span style="font-size:11px; color:#aaa;">${item.detail}</span>
+      <span class="item-name">${item.name} #${item.id}</span>
+      <span class="item-detail">${item.detail}</span>
     </div>
   `).join('');
 }
@@ -310,37 +420,145 @@ function watchLootEvents() {
 
 async function loadUserData() {
   if (!signer || !providerContracts.token) return;
+  let tokenDecimals = 18;
+  let tokenSymbol = 'GFI';
+
   try {
-    const [balance, votes, delegated, vaultShares] = await Promise.all([
-      providerContracts.token.balanceOf(userAddress),
-      providerContracts.token.getVotes(userAddress),
-      providerContracts.token.delegates(userAddress),
-      providerContracts.vault.balanceOf(userAddress)
+    [tokenDecimals, tokenSymbol] = await Promise.all([
+      providerContracts.token.decimals(),
+      providerContracts.token.symbol()
     ]);
-    const decimals = await providerContracts.token.decimals();
-    const symbol = await providerContracts.token.symbol();
-    
-    if (elements.tokenBalance) elements.tokenBalance.textContent = `${formatBig(balance, decimals)} ${symbol}`;
-    if (elements.votingPower) elements.votingPower.textContent = formatBig(votes, 18);
-    if (elements.delegateAddress) elements.delegateAddress.textContent = (delegated && delegated !== ethers.ZeroAddress) ? formatAddress(delegated) : 'None';
-    if (elements.vaultShares) elements.vaultShares.textContent = formatBig(vaultShares, 18);
-    
-    await loadInventory();
-  } catch (error) { setMessage('Failed to load account data: ' + getErrorMessage(error), 'error'); }
+  } catch (error) {
+    console.warn('Failed to load governance token metadata', error);
+  }
+
+  try {
+    const balance = await providerContracts.token.balanceOf(userAddress);
+    if (elements.tokenBalance) elements.tokenBalance.textContent = `${formatBig(balance, tokenDecimals)} ${tokenSymbol}`;
+    if (balance === 0n) {
+      setGovernanceStatus('Your wallet has 0 governance tokens. This token has no public faucet/mint in the contract; send GFI to this wallet before delegating or voting.', 'info');
+    } else {
+      setGovernanceStatus('Governance token loaded. Delegate to yourself or another wallet to activate voting power.', 'success');
+    }
+  } catch (error) {
+    if (elements.tokenBalance) elements.tokenBalance.textContent = 'Unavailable';
+    setGovernanceStatus('Could not load governance token balance: ' + getErrorMessage(error), 'error');
+  }
+
+  try {
+    const votes = await providerContracts.token.getVotes(userAddress);
+    if (elements.votingPower) elements.votingPower.textContent = `${formatBig(votes, tokenDecimals)} ${tokenSymbol}`;
+  } catch (error) {
+    if (elements.votingPower) elements.votingPower.textContent = 'Unavailable';
+    console.warn('Failed to load voting power', error);
+  }
+
+  try {
+    const delegated = await providerContracts.token.delegates(userAddress);
+    setAddressText(elements.delegateAddress, delegated, 'None');
+  } catch (error) {
+    if (elements.delegateAddress) elements.delegateAddress.textContent = 'Unavailable';
+    console.warn('Failed to load delegate address', error);
+  }
+
+  try {
+    if (providerContracts.vault && elements.vaultShares) {
+      const vaultShares = await providerContracts.vault.balanceOf(userAddress);
+      elements.vaultShares.textContent = formatBig(vaultShares, 18);
+    }
+  } catch (error) {
+    if (elements.vaultShares) elements.vaultShares.textContent = 'Unavailable';
+    console.warn('Failed to load vault shares', error);
+  }
+
+  await loadInventory();
 }
 
 async function loadProtocolData() {
   if (!providerContracts.amm || !providerContracts.vault) return;
   try {
-    const [reserveA, reserveB, asset] = await Promise.all([
+    const [reserveA, reserveB, asset, tokenA, tokenB] = await Promise.all([
       providerContracts.amm.reserveA(),
       providerContracts.amm.reserveB(),
-      providerContracts.vault.asset()
+      providerContracts.vault.asset(),
+      providerContracts.amm.tokenA(),
+      providerContracts.amm.tokenB()
     ]);
+    vaultAssetAddress = asset;
+    ammTokenAAddress = tokenA;
+    ammTokenBAddress = tokenB;
+    ammHasLiquidity = reserveA > 0n && reserveB > 0n;
     if (elements.reserveA) elements.reserveA.textContent = formatBig(reserveA, 18);
     if (elements.reserveB) elements.reserveB.textContent = formatBig(reserveB, 18);
-    if (elements.vaultAsset) elements.vaultAsset.textContent = formatAddress(asset);
+    setAddressText(elements.vaultAsset, asset, '-');
+    await loadAmmBalances();
+    if (!ammHasLiquidity) {
+      if (elements.swapButton) elements.swapButton.disabled = true;
+      setMessage('AMM has no liquidity yet, so swaps are disabled until reserves are funded.', 'info');
+    }
   } catch (error) { setMessage('Failed to load protocol state: ' + getErrorMessage(error), 'error'); }
+}
+
+async function loadAmmBalances() {
+  if (!userAddress || !ammTokenAAddress || !ammTokenBAddress) return;
+  try {
+    const tokenA = new ethers.Contract(ammTokenAAddress, abis.erc20, provider);
+    const tokenB = new ethers.Contract(ammTokenBAddress, abis.erc20, provider);
+    const [balanceA, balanceB, symbolA, symbolB] = await Promise.all([
+      tokenA.balanceOf(userAddress),
+      tokenB.balanceOf(userAddress),
+      tokenA.symbol().catch(() => 'A'),
+      tokenB.symbol().catch(() => 'B')
+    ]);
+    if (elements.ammTokenABalance) elements.ammTokenABalance.textContent = `${formatBig(balanceA, 18)} ${symbolA}`;
+    if (elements.ammTokenBBalance) elements.ammTokenBBalance.textContent = `${formatBig(balanceB, 18)} ${symbolB}`;
+  } catch (error) {
+    if (elements.ammTokenABalance) elements.ammTokenABalance.textContent = 'Unavailable';
+    if (elements.ammTokenBBalance) elements.ammTokenBBalance.textContent = 'Unavailable';
+    console.warn('Failed to load AMM balances', error);
+  }
+}
+
+async function loadRentalBalances() {
+  if (!userAddress || !providerContracts.gameItems || !providerContracts.rentalVault) return;
+  const tokenIdRaw = elements.rentalTokenId?.value.trim() || '1';
+  if (!/^[0-9]+$/.test(tokenIdRaw) || BigInt(tokenIdRaw) <= 0n) return;
+
+  try {
+    const tokenId = BigInt(tokenIdRaw);
+    const [walletBalance, depositedBalance] = await Promise.all([
+      providerContracts.gameItems.balanceOf(userAddress, tokenId),
+      providerContracts.rentalVault.depositedAmounts(tokenId)
+    ]);
+    if (elements.rentalWalletBalance) elements.rentalWalletBalance.textContent = `#${tokenId} x ${walletBalance.toString()}`;
+    if (elements.rentalDepositedBalance) elements.rentalDepositedBalance.textContent = `#${tokenId} x ${depositedBalance.toString()}`;
+  } catch (error) {
+    if (elements.rentalWalletBalance) elements.rentalWalletBalance.textContent = 'Unavailable';
+    if (elements.rentalDepositedBalance) elements.rentalDepositedBalance.textContent = 'Unavailable';
+    console.warn('Failed to load rental balances', error);
+  }
+}
+
+async function checkRentalVaultCompatibility() {
+  rentalVaultCompatible = false;
+  if (!providerContracts.rentalVault || !elements.rentalStatus) return;
+  try {
+    const vaultGameItems = await providerContracts.rentalVault.gameItems();
+    rentalVaultCompatible = vaultGameItems.toLowerCase() === config.gameItems.toLowerCase();
+    if (rentalVaultCompatible) {
+      elements.rentalStatus.textContent = 'Rental vault is connected to the active GameItems contract.';
+      elements.rentalStatus.style.color = 'var(--success)';
+      await loadRentalBalances();
+    } else {
+      elements.rentalStatus.textContent = `Rental vault uses ${formatAddress(vaultGameItems)}, but active GameItems is ${formatAddress(config.gameItems)}. Deploy/update RentalVault before deposits.`;
+      elements.rentalStatus.title = `RentalVault gameItems: ${vaultGameItems}\nActive GameItems: ${config.gameItems}`;
+      elements.rentalStatus.style.color = '#ff9c9c';
+    }
+  } catch (error) {
+    elements.rentalStatus.textContent = 'Could not check rental vault compatibility: ' + getErrorMessage(error);
+    elements.rentalStatus.style.color = '#ff9c9c';
+  }
+  setButtonsEnabled(true);
 }
 
 async function loadProposals() {
@@ -361,6 +579,9 @@ async function loadProposals() {
     for (const event of recentEvents) {
       const proposalId = event.args.proposalId;
       const targets = event.args.targets || [];
+      const targetHtml = targets.length
+        ? targets.slice(0, 3).map(address => renderAddress(address)).join(', ')
+        : 'n/a';
       const stateId = await providerContracts.governor.state(proposalId);
       const stateLabel = getStateLabel(Number(stateId));
       
@@ -372,7 +593,7 @@ async function loadProposals() {
           <span><strong>ID:</strong> ${proposalId.toString().slice(0, 8)}...</span>
           <span class="badge">${stateLabel}</span>
         </div>
-        <div style="font-size: 12px; margin-bottom:8px;"><strong>Targets:</strong> ${targets.slice(0, 2).join(', ') || 'n/a'}</div>
+        <div class="proposal-targets"><strong>Targets:</strong> ${targetHtml}</div>
         <div class="proposal-actions"></div>
       `;
       
@@ -423,16 +644,40 @@ async function fetchSubgraph() {
     }
     const swaps = result.data?.swaps || [];
     if (!swaps.length) { 
-      elements.graphResult.textContent = 'No swaps returned by subgraph.'; 
-      setMessage('Subgraph query completed.', 'success'); 
+      await loadOnchainSwaps('Subgraph has no indexed swaps for this deployment yet.');
       return; 
     }
     const rows = swaps.map(swap => `- Swap ${swap.id.slice(0,6)}: ${formatAddress(swap.user)} swapped ${formatBig(swap.amountIn)} → ${formatBig(swap.amountOut)}`).join('\n');
     elements.graphResult.textContent = rows;
     setMessage('Subgraph data loaded.', 'success');
   } catch (error) { 
-    elements.graphResult.textContent = 'Graph fetch failed.'; 
-    setMessage('Subgraph request failed: ' + getErrorMessage(error), 'error'); 
+    await loadOnchainSwaps('Subgraph request failed: ' + getErrorMessage(error));
+  }
+}
+
+async function loadOnchainSwaps(prefix) {
+  if (!providerContracts.amm || !elements.graphResult) return;
+  try {
+    const filter = providerContracts.amm.filters.Swap();
+    const events = await providerContracts.amm.queryFilter(filter, -50000);
+    const recent = events.slice(-5).reverse();
+
+    if (!recent.length) {
+      elements.graphResult.textContent = `${prefix}\nNo on-chain Swap events found in the latest blocks.`;
+      setMessage('No indexed or recent on-chain swaps found.', 'info');
+      return;
+    }
+
+    const rows = recent.map(event => {
+      const args = event.args;
+      return `- On-chain swap ${event.transactionHash.slice(0, 10)}: ${formatAddress(args.user)} swapped ${formatBig(args.amountIn)} -> ${formatBig(args.amountOut)}`;
+    }).join('\n');
+
+    elements.graphResult.textContent = `${prefix}\nShowing latest on-chain AMM events instead:\n${rows}`;
+    setMessage('Loaded latest on-chain AMM swap events.', 'success');
+  } catch (error) {
+    elements.graphResult.textContent = `${prefix}\nOn-chain fallback failed: ${getErrorMessage(error)}`;
+    setMessage('Could not load subgraph or on-chain swaps.', 'error');
   }
 }
 
@@ -457,8 +702,15 @@ async function handleDeposit() {
   if (!signer) { setMessage('Connect wallet first.', 'error'); return; }
   if (!(await checkNetwork())) { setMessage('Switch to the required network before depositing.', 'error'); return; }
   try {
+    if (!vaultAssetAddress) vaultAssetAddress = await providerContracts.vault.asset();
     const amount = ethers.parseUnits(amountValue, 18);
-    const tokenContract = new ethers.Contract(config.governanceToken, abis.erc20, signer);
+    const tokenContract = new ethers.Contract(vaultAssetAddress, abis.erc20, signer);
+    const tokenSymbol = await tokenContract.symbol().catch(() => 'asset');
+    const assetBalance = await tokenContract.balanceOf(userAddress);
+    if (assetBalance < amount) {
+      setMessage(`Not enough ${tokenSymbol} for vault deposit. Balance: ${formatBig(assetBalance, 18)}.`, 'error');
+      return;
+    }
     
     setStatus('Checking allowance...');
     let allowance = 0n;
@@ -467,7 +719,9 @@ async function handleDeposit() {
     if (allowance < amount) {
       setStatus('Approving vault...');
       const approval = await tokenContract.approve(config.gameVault, amount, await getTxOverrides());
+      setMessage('Vault approval submitted. Waiting confirmation...');
       await approval.wait();
+      setMessage('Vault approved. Sending deposit...');
     }
     
     setStatus('Depositing...');
@@ -486,11 +740,28 @@ async function handleSwap() {
   if (!signer) { setMessage('Connect wallet first.', 'error'); return; }
   if (!(await checkNetwork())) { setMessage('Switch to the required network before swapping.', 'error'); return; }
   try {
+    const [reserveA, reserveB] = await Promise.all([
+      providerContracts.amm.reserveA(),
+      providerContracts.amm.reserveB()
+    ]);
+    if (reserveA === 0n || reserveB === 0n) {
+      ammHasLiquidity = false;
+      if (elements.swapButton) elements.swapButton.disabled = true;
+      setMessage('Swap unavailable: AMM reserves are 0. Add liquidity first or use an AMM deployment with funded reserves.', 'error');
+      return;
+    }
+
     const amount = ethers.parseUnits(amountValue, 18);
     const amm = providerContracts.amm.connect(signer);
     const tokenA = await providerContracts.amm.tokenA();
     const tokenB = await providerContracts.amm.tokenB();
     const dexToken = new ethers.Contract(tokenA, abis.erc20, signer);
+    const tokenSymbol = await dexToken.symbol().catch(() => 'token A');
+    const tokenBalance = await dexToken.balanceOf(userAddress);
+    if (tokenBalance < amount) {
+      setMessage(`Not enough ${tokenSymbol} to swap. Balance: ${formatBig(tokenBalance, 18)}.`, 'error');
+      return;
+    }
     
     setStatus('Checking token allowance...');
     let allowance = 0n;
@@ -499,7 +770,9 @@ async function handleSwap() {
     if (allowance < amount) {
       setStatus('Approving AMM...');
       const approval = await dexToken.approve(config.resourceAmm, amount, await getTxOverrides());
+      setMessage('AMM approval submitted. Waiting confirmation...');
       await approval.wait();
+      setMessage('AMM approved. Sending swap...');
     }
     
     setStatus('Calculating slippage...');
@@ -532,28 +805,61 @@ async function handleDelegate() {
 }
 
 async function handleCraft() {
-  const recipeId = elements.craftRecipeSelect.value;
-  if (!recipeId) { setMessage('Select a recipe.', 'error'); return; }
+  const recipe = craftRecipes[Number(elements.craftRecipeSelect.value)];
+  if (!recipe) { setMessage('Select a recipe.', 'error'); return; }
   if (!signer) { setMessage('Connect wallet first.', 'error'); return; }
   if (!(await checkNetwork())) { setMessage('Switch to the required network.', 'error'); return; }
   try {
-    setStatus('Crafting...');
-    const ingredients = [1n, 2n];
+    setStatus('Checking ingredients...');
     const gameItemsWithSigner = providerContracts.gameItems.connect(signer);
-    const tx = await gameItemsWithSigner.craft(ingredients, BigInt(recipeId), await getTxOverrides());
+    const ingredientIds = await getCraftIngredients(recipe);
+    const missing = [];
+    for (const ingredientId of ingredientIds) {
+      const balance = await providerContracts.gameItems.balanceOf(userAddress, ingredientId);
+      if (balance < 1n) missing.push(itemById[ingredientId]?.name || `Item ${ingredientId}`);
+    }
+    if (missing.length) {
+      setMessage(`Missing ingredients: ${missing.join(', ')}. Open loot boxes first.`, 'error');
+      return;
+    }
+
+    setStatus('Crafting...');
+    const ingredients = ingredientIds.map(id => BigInt(id));
+    try {
+      await gameItemsWithSigner.craft.staticCall(ingredients, BigInt(recipe.resultId));
+    } catch (error) {
+      setMessage(`Craft simulation failed for ${recipe.name}. Contract recipe: ${ingredientIds.join(' + ')} -> ${recipe.resultId}. ${getErrorMessage(error)}`, 'error');
+      return;
+    }
+    const tx = await gameItemsWithSigner.craft(ingredients, BigInt(recipe.resultId), await getTxOverrides());
     await tx.wait();
-    setMessage(`Craft successful, item ${recipeId} created.`, 'success');
+    setMessage(`Craft successful: ${recipe.name} #${recipe.resultId} created.`, 'success');
     await loadInventory();
   } catch (error) { setMessage('Craft failed: ' + getErrorMessage(error), 'error'); } finally { setStatus('Ready'); }
 }
 
 async function handleDepositItem() {
-  const tokenId = elements.rentalTokenId.value.trim();
-  const amount = elements.rentalAmount.value.trim();
-  if (!tokenId || !amount) { setMessage('Enter token ID and amount.', 'error'); return; }
+  const tokenIdRaw = elements.rentalTokenId.value.trim();
+  const amountRaw = elements.rentalAmount.value.trim();
+  if (!tokenIdRaw || !amountRaw) { setMessage('Enter token ID and amount.', 'error'); return; }
   if (!signer) { setMessage('Connect wallet first.', 'error'); return; }
   if (!(await checkNetwork())) { setMessage('Switch to the required network.', 'error'); return; }
   try {
+    const tokenId = parsePositiveWholeBigInt(tokenIdRaw, 'Token ID');
+    const amount = parsePositiveWholeBigInt(amountRaw, 'Amount');
+
+    await checkRentalVaultCompatibility();
+    if (!rentalVaultCompatible) {
+      setMessage('Rental deposit blocked: this RentalVault was deployed for an older GameItems contract.', 'error');
+      return;
+    }
+
+    const owned = await providerContracts.gameItems.balanceOf(userAddress, tokenId);
+    if (owned < amount) {
+      setMessage(`Not enough item #${tokenId}. Owned: ${owned.toString()}, requested deposit: ${amount}.`, 'error');
+      return;
+    }
+
     setStatus('Checking items approval...');
     const gameItemsWithSigner = providerContracts.gameItems.connect(signer);
     const isApproved = await gameItemsWithSigner.isApprovedForAll(userAddress, config.rentalVault);
@@ -561,28 +867,45 @@ async function handleDepositItem() {
     if (!isApproved) {
       setStatus('Approving rental vault...');
       const approveTx = await gameItemsWithSigner.setApprovalForAll(config.rentalVault, true, await getTxOverrides());
+      setMessage('Rental vault approval submitted. Waiting confirmation...');
       await approveTx.wait();
+      setMessage('Rental vault approved. Sending deposit...');
     }
     
     setStatus('Depositing item...');
     const rentalWithSigner = providerContracts.rentalVault.connect(signer);
-    const tx = await rentalWithSigner.deposit(BigInt(tokenId), BigInt(amount), await getTxOverrides());
+    const tx = await rentalWithSigner.deposit(tokenId, amount, await getTxOverrides());
     await tx.wait();
     setMessage('Item deposited to rental vault.', 'success');
     await loadInventory();
+    await loadRentalBalances();
   } catch (error) { setMessage('Deposit item failed: ' + getErrorMessage(error), 'error'); } finally { setStatus('Ready'); }
 }
 
 async function handleRentItem() {
-  const tokenId = elements.rentalTokenId.value.trim();
-  if (!tokenId) { setMessage('Enter token ID to rent.', 'error'); return; }
+  const tokenIdRaw = elements.rentalTokenId.value.trim();
+  if (!tokenIdRaw) { setMessage('Enter token ID to rent.', 'error'); return; }
   if (!signer) { setMessage('Connect wallet first.', 'error'); return; }
   if (!(await checkNetwork())) { setMessage('Switch to the required network.', 'error'); return; }
   try {
+    const tokenId = parsePositiveWholeBigInt(tokenIdRaw, 'Token ID');
+
+    await checkRentalVaultCompatibility();
+    if (!rentalVaultCompatible) {
+      setMessage('Rent blocked: this RentalVault was deployed for an older GameItems contract.', 'error');
+      return;
+    }
+
+    const deposited = await providerContracts.rentalVault.depositedAmounts(tokenId);
+    if (deposited === 0n) {
+      setMessage(`Item #${tokenId} is not deposited in the rental vault yet.`, 'error');
+      return;
+    }
+
     setStatus('Renting item...');
     const renterAddress = "0x0000000000000000000000000000000000000789";
     const rentalWithSigner = providerContracts.rentalVault.connect(signer);
-    const tx = await rentalWithSigner.rent(BigInt(tokenId), renterAddress, 86400n, await getTxOverrides());
+    const tx = await rentalWithSigner.rent(tokenId, renterAddress, 86400n, await getTxOverrides());
     await tx.wait();
     setMessage('Item rented successfully.', 'success');
   } catch (error) { setMessage('Rent failed: ' + getErrorMessage(error), 'error'); } finally { setStatus('Ready'); }
@@ -624,10 +947,107 @@ async function handleRequestLoot() {
 function getErrorMessage(error) {
   if (!error) return 'Unknown error';
   if (typeof error === 'string') return error;
+  if (error.reason) return error.reason;
+  if (error.shortMessage) return error.shortMessage;
+  if (error.info?.error?.data?.message) return error.info.error.data.message;
   if (error.info?.error?.message) return error.info.error.message;
+  if (error.error?.data?.message) return error.error.data.message;
+  if (error.error?.message) return error.error.message;
   if (error.message) return error.message;
   if (error.data?.message) return error.data.message;
   return String(error);
+}
+
+async function mintTestToken(tokenAddress, label) {
+  const token = new ethers.Contract(tokenAddress, abis.erc20, signer);
+  const tx = await token.testMint(await getTxOverrides());
+  setMessage(`${label} test mint submitted. Waiting confirmation...`);
+  await tx.wait();
+}
+
+async function handleMintSwapTokens() {
+  if (!signer) { setMessage('Connect wallet first.', 'error'); return; }
+  if (!(await checkNetwork())) { setMessage('Switch to the required network before minting.', 'error'); return; }
+  try {
+    if (!ammTokenAAddress || !ammTokenBAddress) {
+      ammTokenAAddress = await providerContracts.amm.tokenA();
+      ammTokenBAddress = await providerContracts.amm.tokenB();
+    }
+
+    setStatus('Minting AMM test tokens...');
+    await mintTestToken(ammTokenAAddress, 'Token A');
+    await mintTestToken(ammTokenBAddress, 'Token B');
+    setMessage('AMM test tokens minted.', 'success');
+    await loadUserData();
+    await loadAmmBalances();
+  } catch (error) {
+    setMessage('AMM test mint failed: ' + getErrorMessage(error) + '. Redeploy tokens with GovernanceToken.testMint() first.', 'error');
+  } finally {
+    setStatus('Ready');
+  }
+}
+
+async function handleAddLiquidity() {
+  const amountAValue = elements.liquidityAmountA?.value.trim();
+  const amountBValue = elements.liquidityAmountB?.value.trim();
+  if (!amountAValue || !amountBValue || Number(amountAValue) <= 0 || Number(amountBValue) <= 0) {
+    setMessage('Enter liquidity amounts for both AMM tokens.', 'error');
+    return;
+  }
+  if (!signer) { setMessage('Connect wallet first.', 'error'); return; }
+  if (!(await checkNetwork())) { setMessage('Switch to the required network before adding liquidity.', 'error'); return; }
+  try {
+    if (!ammTokenAAddress || !ammTokenBAddress) {
+      ammTokenAAddress = await providerContracts.amm.tokenA();
+      ammTokenBAddress = await providerContracts.amm.tokenB();
+    }
+
+    const amountA = ethers.parseUnits(amountAValue, 18);
+    const amountB = ethers.parseUnits(amountBValue, 18);
+    const tokenA = new ethers.Contract(ammTokenAAddress, abis.erc20, signer);
+    const tokenB = new ethers.Contract(ammTokenBAddress, abis.erc20, signer);
+
+    for (const [token, amount, label] of [[tokenA, amountA, 'Token A'], [tokenB, amountB, 'Token B']]) {
+      const balance = await token.balanceOf(userAddress);
+      if (balance < amount) {
+        setMessage(`Not enough ${label}. Mint test AMM tokens first.`, 'error');
+        return;
+      }
+      const allowance = await token.allowance(userAddress, config.resourceAmm);
+      if (allowance < amount) {
+        setStatus(`Approving ${label}...`);
+        const approval = await token.approve(config.resourceAmm, amount, await getTxOverrides());
+        await approval.wait();
+      }
+    }
+
+    setStatus('Adding AMM liquidity...');
+    const amm = providerContracts.amm.connect(signer);
+    const tx = await amm.addLiquidity(amountA, amountB, await getTxOverrides());
+    await tx.wait();
+    setMessage('AMM liquidity added. Swaps are available now.', 'success');
+    await loadProtocolData();
+    await loadAmmBalances();
+  } catch (error) {
+    setMessage('Add liquidity failed: ' + getErrorMessage(error), 'error');
+  } finally {
+    setStatus('Ready');
+  }
+}
+
+async function handleMintGovernance() {
+  if (!signer) { setMessage('Connect wallet first.', 'error'); return; }
+  if (!(await checkNetwork())) { setMessage('Switch to the required network before minting.', 'error'); return; }
+  try {
+    setStatus('Minting test GFI...');
+    await mintTestToken(config.governanceToken, 'GFI');
+    setMessage('Test GFI minted. Delegate to yourself to activate voting power.', 'success');
+    await loadUserData();
+  } catch (error) {
+    setMessage('GFI test mint failed: ' + getErrorMessage(error) + '. The currently configured token was deployed before testMint existed.', 'error');
+  } finally {
+    setStatus('Ready');
+  }
 }
 
 async function connectMetaMask() {
@@ -669,6 +1089,8 @@ async function postConnect() {
     await loadAvailableItems();
     await loadUserData();
     await loadProtocolData();
+    await checkRentalVaultCompatibility();
+    await loadRentalBalances();
     await loadProposals();
     await fetchSubgraph();
     watchLootEvents();
@@ -681,11 +1103,16 @@ function setupEventListeners() {
   elements.switchNetworkButton?.addEventListener('click', switchNetwork);
   elements.depositButton?.addEventListener('click', handleDeposit);
   elements.swapButton?.addEventListener('click', handleSwap);
+  elements.mintSwapTokensButton?.addEventListener('click', handleMintSwapTokens);
+  elements.addLiquidityButton?.addEventListener('click', handleAddLiquidity);
+  elements.mintGovernanceButton?.addEventListener('click', handleMintGovernance);
   elements.delegateButton?.addEventListener('click', handleDelegate);
   elements.refreshGraph?.addEventListener('click', fetchSubgraph);
   elements.craftButton?.addEventListener('click', handleCraft);
+  elements.craftRecipeSelect?.addEventListener('change', updateCraftRecipeInfo);
   elements.depositItemButton?.addEventListener('click', handleDepositItem);
   elements.rentItemButton?.addEventListener('click', handleRentItem);
+  elements.rentalTokenId?.addEventListener('input', loadRentalBalances);
   elements.lootButton?.addEventListener('click', handleRequestLoot);
   
   if (elements.subgraphEndpoint) elements.subgraphEndpoint.value = config.graphDefault;
@@ -698,5 +1125,6 @@ function setupEventListeners() {
 }
 
 setupEventListeners();
+updateCraftRecipeInfo();
 setStatus('Ready');
 setButtonsEnabled(false);

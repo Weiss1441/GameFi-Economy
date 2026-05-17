@@ -26,6 +26,12 @@ contract GovernanceTokenTest is Test {
         assertEq(token.delegates(address(this)), user);
     }
 
+    function test_testMint() public {
+        vm.prank(user);
+        token.testMint();
+        assertEq(token.balanceOf(user), token.TEST_MINT_AMOUNT());
+    }
+
     function test_voting_power_after_delegate() public {
         token.transfer(user, 500 ether);
         vm.prank(user);

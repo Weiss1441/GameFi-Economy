@@ -46,6 +46,7 @@
       
       <section class="card">
         <h2>Game Hub</h2>
+        <p class="section-description">Open VRF loot boxes to mint ERC-1155 items, inspect your inventory, combine owned items into crafted rewards, and deposit items into the rental vault.</p>
         <div class="subgrid">
           <div class="action-box">
             <h3>My Inventory</h3>
@@ -65,17 +66,22 @@
             <h3>Craft new item</h3>
             <label>Select Recipe</label>
             <select id="craftRecipeSelect">
-              <option value="1">Wooden Sword (Recipe 1)</option>
-              <option value="2">Health Potion (Recipe 2)</option>
+              <option value="3">Iron Armor: Dragon Scale + Mystery Chest</option>
+              <option value="4">Dragon Scale: Armor + Mystery Chest</option>
+              <option value="5">Mystery Chest: Potion + Armor</option>
             </select>
+            <div id="craftRecipeInfo" class="craft-price">Requires owned ingredients before crafting.</div>
             <button id="craftButton" class="full-width">Craft</button>
           </div>
           <div class="action-box">
             <h3>Rental Vault</h3>
-            <label>Token ID <input id="rentalTokenId" type="number" placeholder="1" /></label>
-            <label>Amount <input id="rentalAmount" type="number" placeholder="1" /></label>
+            <label>Token ID <input id="rentalTokenId" type="number" min="1" step="1" inputmode="numeric" placeholder="1" /></label>
+            <label>Amount <input id="rentalAmount" type="number" min="1" step="1" inputmode="numeric" placeholder="1" /></label>
             <button id="depositItemButton">Deposit item</button>
             <button id="rentItemButton">Rent to 0x789...</button>
+            <div class="field"><span>Wallet item</span><span id="rentalWalletBalance">-</span></div>
+            <div class="field"><span>Deposited</span><span id="rentalDepositedBalance">-</span></div>
+            <div id="rentalStatus" class="small-message">Connect wallet to check rental vault.</div>
           </div>
         </div>
       </section>
@@ -83,12 +89,19 @@
       
       <section class="card">
         <h2>DeFi Hub</h2>
+        <p class="section-description">Swap resource tokens through the constant-product AMM and deposit governance tokens into the ERC-4626 vault to receive vault shares.</p>
         <div class="subgrid">
           <div class="action-box">
             <h3>Swap tokens (AMM)</h3>
             <label>Amount</label>
             <input id="swapAmount" type="number" min="0" step="0.0001" placeholder="1.0" />
-            <button id="swapButton" class="full-width">Swap A → B</button>
+            <button id="swapButton" class="full-width">Swap A to B</button>
+            <button id="mintSwapTokensButton" class="full-width">Mint test AMM tokens</button>
+            <label>Liquidity token A</label>
+            <input id="liquidityAmountA" type="number" min="0" step="0.0001" placeholder="10" />
+            <label>Liquidity token B</label>
+            <input id="liquidityAmountB" type="number" min="0" step="0.0001" placeholder="10" />
+            <button id="addLiquidityButton" class="full-width">Add liquidity</button>
             <div class="reserve-row">
               <span>Reserve A</span>
               <span id="reserveA">-</span>
@@ -97,6 +110,14 @@
               <span>Reserve B</span>
               <span id="reserveB">-</span>
             </div>
+            <div class="reserve-row">
+              <span>Your token A</span>
+              <span id="ammTokenABalance">-</span>
+            </div>
+            <div class="reserve-row">
+              <span>Your token B</span>
+              <span id="ammTokenBBalance">-</span>
+            </div>
           </div>
 
           <div class="action-box">
@@ -104,6 +125,8 @@
             <label>Deposit amount</label>
             <input id="depositAmount" type="number" step="0.0001" placeholder="100" />
             <button id="depositButton" class="full-width">Deposit</button>
+            <div class="field"><span>Vault asset</span><span id="vaultAsset">-</span></div>
+            <div class="field"><span>Vault shares</span><span id="vaultShares">-</span></div>
           </div>
         </div>
       </section>
@@ -111,14 +134,17 @@
       
       <section class="card">
         <h2>DAO Hub</h2>
+        <p class="section-description">Track governance token balances, delegate voting power, review recent proposals, and vote directly from the dashboard when proposals are active.</p>
         <div class="subgrid">
           <div class="action-box">
             <h3>Governance token</h3>
             <div class="field"><span>Your balance</span><span id="tokenBalance">-</span></div>
             <div class="field"><span>Voting power</span><span id="votingPower">-</span></div>
             <div class="field"><span>Delegated to</span><span id="delegateAddress">-</span></div>
+            <button id="mintGovernanceButton" class="full-width">Mint test GFI</button>
             <label>Delegate to <input id="delegateInput" type="text" placeholder="0x..." /></label>
             <button id="delegateButton" class="full-width">Delegate votes</button>
+            <div id="governanceStatus" class="small-message">Connect wallet to load governance token state.</div>
           </div>
           <div class="action-box">
             <h3>Proposals</h3>
@@ -130,6 +156,7 @@
 
     <section class="card">
       <h2>Subgraph Data</h2>
+      <p class="section-description">Load indexed swap activity from the configured subgraph endpoint for a quick read on protocol activity.</p>
       <label>GraphQL endpoint
         <input id="subgraphEndpoint" type="url" placeholder="https://api.studio.thegraph.com/query/..." />
       </label>

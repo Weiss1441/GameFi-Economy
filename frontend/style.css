@@ -57,6 +57,10 @@ button, input {
   font: inherit;
 }
 
+button, input, select {
+  min-width: 0;
+}
+
 button {
   border: 1px solid var(--border);
   background: linear-gradient(180deg, rgba(107,196,255,.16), rgba(107,196,255,.08));
@@ -79,6 +83,7 @@ button:disabled {
 }
 
 .full-width {
+  display: block;
   width: 100%;
   margin-top: 12px;
 }
@@ -106,10 +111,18 @@ input[type="url"] {
 
 .card h2 {
   margin-top: 0;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
   font-size: 1.4rem;
   border-left: 3px solid var(--accent);
   padding-left: 12px;
+}
+
+.section-description {
+  margin: 0 0 20px;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
+  max-width: 74ch;
 }
 
 .status-card {
@@ -144,6 +157,7 @@ input[type="url"] {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+  min-width: 0;
 }
 
 .status-item strong {
@@ -153,8 +167,9 @@ input[type="url"] {
 
 .status-item span {
   font-family: monospace;
-  word-break: break-all;
+  overflow-wrap: anywhere;
   color: var(--accent);
+  min-width: 0;
 }
 
 .status-item button {
@@ -171,6 +186,8 @@ input[type="url"] {
   border-radius: 20px;
   display: inline-block;
   letter-spacing: 0.5px;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .copy-btn {
@@ -194,15 +211,20 @@ input[type="url"] {
   border-radius: 14px;
   padding: 12px;
   background: rgba(255,255,255,.03);
+  min-width: 0;
 }
 
 .field span:first-child {
   color: var(--muted);
+  flex: 0 0 auto;
 }
 
 .field span:last-child {
   color: var(--accent);
   font-family: monospace;
+  min-width: 0;
+  text-align: right;
+  overflow-wrap: anywhere;
 }
 
 .dashboard-grid {
@@ -222,6 +244,7 @@ input[type="url"] {
   background: rgba(255,255,255,.04);
   padding: 18px;
   border-radius: 20px;
+  min-width: 0;
 }
 
 .action-box h3 {
@@ -254,6 +277,17 @@ input[type="url"] {
   margin-bottom: 8px;
 }
 
+.action-box .full-width + .full-width {
+  margin-top: 10px;
+}
+
+section.card > button,
+#refreshGraph {
+  display: inline-flex;
+  margin-top: 14px;
+  margin-bottom: 12px;
+}
+
 .action-box .field {
   margin-top: 12px;
   margin-bottom: 8px;
@@ -271,9 +305,11 @@ input[type="url"] {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
   padding: 10px 0;
   margin-top: 12px;
   border-top: 1px solid rgba(255,255,255,0.06);
+  min-width: 0;
 }
 
 .reserve-row:first-of-type {
@@ -289,6 +325,9 @@ input[type="url"] {
   color: var(--accent);
   font-family: monospace;
   font-weight: 500;
+  min-width: 0;
+  text-align: right;
+  overflow-wrap: anywhere;
 }
 
 .vault-stats {
@@ -318,7 +357,9 @@ input[type="url"] {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
   border-bottom: 1px solid rgba(255,255,255,0.05);
+  min-width: 0;
 }
 
 .inventory-item:last-child {
@@ -327,11 +368,15 @@ input[type="url"] {
 
 .inventory-item span:first-child {
   font-weight: 500;
+  min-width: 0;
 }
 
 .inventory-item span:last-child {
   color: var(--accent);
   font-family: monospace;
+  min-width: 0;
+  text-align: right;
+  overflow-wrap: anywhere;
 }
 
 #proposalList {
@@ -344,6 +389,7 @@ input[type="url"] {
   border-radius: 16px;
   border: 1px solid rgba(255,255,255,.08);
   background: rgba(255,255,255,.03);
+  min-width: 0;
 }
 
 .proposal-meta {
@@ -351,6 +397,21 @@ input[type="url"] {
   flex-wrap: wrap;
   gap: 10px;
   margin-bottom: 8px;
+  min-width: 0;
+}
+
+.proposal-targets {
+  color: var(--muted);
+  font-size: 12px;
+  margin-bottom: 8px;
+  overflow-wrap: anywhere;
+}
+
+.proposal-targets code,
+.inline-address {
+  color: var(--accent);
+  font-family: monospace;
+  overflow-wrap: anywhere;
 }
 
 .proposal-actions {
@@ -374,7 +435,12 @@ input[type="url"] {
   border-radius: 14px;
   background: rgba(0,0,0,.3);
   font-size: 0.9rem;
-  word-break: break-all;
+  overflow-wrap: anywhere;
+}
+
+#graphResult {
+  white-space: pre-wrap;
+  line-height: 1.45;
 }
 
 #messagePanel {
@@ -393,7 +459,6 @@ input[type="url"] {
 }
 
 
-/* additional styles for game hub */
 .item-icon {
   width: 24px;
   height: 24px;
@@ -409,8 +474,10 @@ input[type="url"] {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
   padding: 8px 12px;
   border-bottom: 1px solid rgba(255,255,255,0.05);
+  min-width: 0;
 }
 
 .inventory-item:last-child {
@@ -421,11 +488,22 @@ input[type="url"] {
   display: flex;
   align-items: center;
   font-weight: 500;
+  min-width: 0;
 }
 
 .item-balance {
   color: var(--accent);
   font-family: monospace;
+  min-width: 0;
+  text-align: right;
+}
+
+.item-detail {
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  text-align: right;
 }
 
 select {
