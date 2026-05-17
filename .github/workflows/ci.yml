@@ -57,4 +57,7 @@ jobs:
         run: forge coverage --report summary
 
       - name: Run Slither
-        run: slither . --filter-paths "lib|node_modules|out|cache|broadcast" --fail-medium
+        run: >
+          slither . --filter-paths "lib|node_modules|out|cache|broadcast"
+          --exclude reentrancy-benign,reentrancy-events,timestamp,assembly,missing-inheritance,naming-convention,too-many-digits,constable-states,immutable-states
+          --fail-medium
