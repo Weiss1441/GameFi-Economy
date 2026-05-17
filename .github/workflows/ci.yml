@@ -7,14 +7,15 @@ on:
     branches: [main, master]
 
 jobs:
-  test:
+  quality:
     runs-on: ubuntu-latest
 
     env:
       ETH_MAINNET_RPC: ${{ secrets.ETH_MAINNET_RPC }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
           submodules: recursive
 
@@ -23,16 +24,37 @@ jobs:
         with:
           version: nightly
 
-      - name: Install dependencies
-        run: |
-          forge install OpenZeppelin/openzeppelin-contracts 
-          forge install foundry-rs/forge-std 
+      - name: Install Node dependencies
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
 
-      - name: Run Forge build
+      - name: Install npm packages
+        run: npm ci
+
+      - name: Install Slither
+        run: pipx install slither-analyzer
+
+      - name: Check Solidity formatting
+        run: forge fmt --check
+
+      - name: Run Solhint
+        run: npx --yes solhint@latest "src/**/*.sol" "script/**/*.sol" "test/**/*.sol"
+
+      - name: Run Prettier
+        run: npx --yes prettier@latest --check "frontend/**/*.{html,css,js}" "subgraph/**/*.{graphql,yaml,ts}"
+
+      - name: Build contracts
         run: |
           forge clean
           forge build
 
-      - name: Run Forge tests
-        run: |
-          forge test
+      - name: Run tests
+        run: forge test
+
+      - name: Generate coverage
+        run: forge coverage --report summary
+
+      - name: Run Slither
+        run: slither . --filter-paths "lib|node_modules|out|cache|broadcast" --fail-high --fail-medium
