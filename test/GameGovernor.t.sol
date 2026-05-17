@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.25;
+
 import "forge-std/Test.sol";
 import "../src/governance/GovernanceToken.sol";
 import "../src/governance/GameGovernor.sol";
@@ -18,7 +19,10 @@ contract GameGovernorTest is Test {
         address[] memory proposers = new address[](1);
         address[] memory executors = new address[](1);
         timelock = new GameTimelock(2 days, proposers, executors, address(this));
-        governor = new GameGovernor(IVotes(address(token)), TimelockController(payable(address(timelock))));
+        governor = new GameGovernor(
+            IVotes(address(token)),
+            TimelockController(payable(address(timelock)))
+        );
         timelock.grantRole(timelock.PROPOSER_ROLE(), address(governor));
         timelock.grantRole(timelock.EXECUTOR_ROLE(), address(0));
         params = new GameParameters();
@@ -29,7 +33,9 @@ contract GameGovernorTest is Test {
         vm.roll(block.number + 1);
     }
 
-    function _propose() internal returns (uint256, address[] memory, uint256[] memory, bytes[] memory, string memory) {
+    function _propose() internal returns (
+        uint256, address[] memory, uint256[] memory, bytes[] memory, string memory
+    ) {
         address[] memory targets = new address[](1);
         targets[0] = address(params);
         uint256[] memory values = new uint256[](1);
@@ -96,5 +102,16 @@ contract GameGovernorTest is Test {
         calldatas[0] = abi.encodeWithSelector(params.setDropRate.selector, 1, 1000);
         vm.expectRevert();
         governor.propose(targets, values, calldatas, "poor proposal");
+    }
+
+    function testFuzz_votingPowerAfterDelegate(uint256 transferAmount) public {
+        vm.assume(transferAmount > 0 && transferAmount <= token.totalSupply());
+        address newVoter = address(0xBEEF);
+        vm.prank(voter);
+        token.transfer(newVoter, transferAmount);
+        vm.prank(newVoter);
+        token.delegate(newVoter);
+        vm.roll(block.number + 1);
+        assertEq(governor.getVotes(newVoter, block.number - 1), transferAmount);
     }
 }

@@ -128,4 +128,18 @@ contract ResourceAMMTest is Test {
 
         assertGe(kAfter, kBefore);
     }
+
+    function testFuzz_addLiquidity(uint256 amountA, uint256 amountB) public {
+    amountA = bound(amountA, 0.01 ether, 500 ether);
+    amountB = bound(amountB, 0.01 ether, 500 ether);
+    tokenA.mint(user, amountA);
+    tokenB.mint(user, amountB);
+    vm.startPrank(user);
+    tokenA.approve(address(amm), amountA);
+    tokenB.approve(address(amm), amountB);
+    uint256 shares = amm.addLiquidity(amountA, amountB);
+    vm.stopPrank();
+    assertGt(shares, 0);
+    assertEq(amm.totalLiquidityShares(), shares);
+}
 }
