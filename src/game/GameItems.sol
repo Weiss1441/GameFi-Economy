@@ -51,7 +51,7 @@ contract GameItems is ERC1155, AccessControl, IGameItems {
     }
 
     function burn(address from, uint256 id, uint256 amount) public override {
-        require(from == msg.sender || isApprovedForAll(from, msg.sender));
+        require(from == msg.sender || isApprovedForAll(from, msg.sender), "Not authorized");
         _burn(from, id, amount);
     }
 
@@ -60,7 +60,7 @@ contract GameItems is ERC1155, AccessControl, IGameItems {
         override
         returns (uint256)
     {
-        require(ingredients.length > 0);
+        require(ingredients.length > 0, "No ingredients");
 
         for (uint256 i = 0; i < ingredients.length; i++) {
             _burn(msg.sender, ingredients[i], 1);
