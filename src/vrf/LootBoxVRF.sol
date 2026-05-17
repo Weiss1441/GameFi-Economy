@@ -31,12 +31,9 @@ contract LootBoxVRF is VRFConsumerBaseV2Plus, AccessControl {
     event LootRequested(address indexed user, uint256 indexed requestId);
     event LootMinted(address indexed user, uint256 itemId, uint256 rarity);
 
-    constructor(
-        address vrfCoordinator,
-        uint256 _subscriptionId,
-        bytes32 _keyHash,
-        address gameItemsAddress
-    ) VRFConsumerBaseV2Plus(vrfCoordinator) {
+    constructor(address vrfCoordinator, uint256 _subscriptionId, bytes32 _keyHash, address gameItemsAddress)
+        VRFConsumerBaseV2Plus(vrfCoordinator)
+    {
         subscriptionId = _subscriptionId;
         keyHash = _keyHash;
         gameItems = ILootGameItems(gameItemsAddress);
@@ -53,24 +50,16 @@ contract LootBoxVRF is VRFConsumerBaseV2Plus, AccessControl {
                 requestConfirmations: requestConfirmations,
                 callbackGasLimit: callbackGasLimit,
                 numWords: numWords,
-                extraArgs: VRFV2PlusClient._argsToBytes(
-                    VRFV2PlusClient.ExtraArgsV1({nativePayment: nativePayment})
-                )
+                extraArgs: VRFV2PlusClient._argsToBytes(VRFV2PlusClient.ExtraArgsV1({nativePayment: nativePayment}))
             })
         );
 
-        requests[requestId] = LootRequest({
-            user: msg.sender,
-            fulfilled: false
-        });
+        requests[requestId] = LootRequest({user: msg.sender, fulfilled: false});
 
         emit LootRequested(msg.sender, requestId);
     }
 
-    function fulfillRandomWords(
-        uint256 requestId,
-        uint256[] calldata randomWords
-    ) internal override {
+    function fulfillRandomWords(uint256 requestId, uint256[] calldata randomWords) internal override {
         LootRequest storage req = requests[requestId];
 
         require(req.user != address(0), "Invalid request");

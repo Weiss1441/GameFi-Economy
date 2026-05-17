@@ -111,17 +111,9 @@ contract DeployFull is Script {
     function _deployGovernanceAndVault() private {
         gov = new GovernanceToken();
         swapTokenB = new GovernanceToken();
-        timelock = new GameTimelock(
-            2 days,
-            new address[](0),
-            new address[](0),
-            deployer
-        );
+        timelock = new GameTimelock(2 days, new address[](0), new address[](0), deployer);
 
-        governor = new GameGovernor(
-            IVotes(address(gov)),
-            TimelockController(payable(address(timelock)))
-        );
+        governor = new GameGovernor(IVotes(address(gov)), TimelockController(payable(address(timelock))));
 
         timelock.grantRole(timelock.PROPOSER_ROLE(), address(governor));
         timelock.grantRole(timelock.EXECUTOR_ROLE(), address(0));
@@ -132,13 +124,7 @@ contract DeployFull is Script {
     function _deployVault() private {
         vaultImpl = new GameVaultV1();
         bytes memory initData = abi.encodeWithSelector(
-            GameVaultV1.initialize.selector,
-            address(gov),
-            "GameFi Vault Shares",
-            "vGFI",
-            500,
-            deployer,
-            0
+            GameVaultV1.initialize.selector, address(gov), "GameFi Vault Shares", "vGFI", 500, deployer, 0
         );
 
         vault = new ERC1967Proxy(address(vaultImpl), initData);

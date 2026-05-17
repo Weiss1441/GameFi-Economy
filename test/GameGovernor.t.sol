@@ -19,10 +19,7 @@ contract GameGovernorTest is Test {
         address[] memory proposers = new address[](1);
         address[] memory executors = new address[](1);
         timelock = new GameTimelock(2 days, proposers, executors, address(this));
-        governor = new GameGovernor(
-            IVotes(address(token)),
-            TimelockController(payable(address(timelock)))
-        );
+        governor = new GameGovernor(IVotes(address(token)), TimelockController(payable(address(timelock))));
         timelock.grantRole(timelock.PROPOSER_ROLE(), address(governor));
         timelock.grantRole(timelock.EXECUTOR_ROLE(), address(0));
         params = new GameParameters();
@@ -33,9 +30,7 @@ contract GameGovernorTest is Test {
         vm.roll(block.number + 1);
     }
 
-    function _propose() internal returns (
-        uint256, address[] memory, uint256[] memory, bytes[] memory, string memory
-    ) {
+    function _propose() internal returns (uint256, address[] memory, uint256[] memory, bytes[] memory, string memory) {
         address[] memory targets = new address[](1);
         targets[0] = address(params);
         uint256[] memory values = new uint256[](1);
@@ -67,6 +62,20 @@ contract GameGovernorTest is Test {
         assertEq(params.dropRates(1), 5000);
     }
 
+    function test_governorParameters() public view {
+        assertEq(governor.votingDelay(), 7200);
+        assertEq(governor.votingPeriod(), 50400);
+        assertEq(governor.proposalThreshold(), 10000 ether);
+        assertEq(governor.quorum(block.number - 1), token.totalSupply() * 4 / 100);
+        assertEq(governor.timelock(), address(timelock));
+        assertEq(address(governor.token()), address(token));
+    }
+
+    function test_proposalNeedsQueuing() public {
+        (uint256 proposalId,,,,) = _propose();
+        assertTrue(governor.proposalNeedsQueuing(proposalId));
+    }
+
     function test_proposalState_active() public {
         (uint256 proposalId,,,,) = _propose();
         vm.roll(block.number + governor.votingDelay() + 1);
@@ -90,6 +99,21 @@ contract GameGovernorTest is Test {
         vm.prank(voter);
         vm.expectRevert();
         governor.castVote(proposalId, 1);
+    }
+
+    function test_cancelDefeatedProposalByProposer() public {
+        (
+            uint256 proposalId,
+            address[] memory targets,
+            uint256[] memory values,
+            bytes[] memory calldatas,
+            string memory description
+        ) = _propose();
+
+        vm.prank(voter);
+        governor.cancel(targets, values, calldatas, keccak256(bytes(description)));
+
+        assertEq(uint256(governor.state(proposalId)), uint256(IGovernor.ProposalState.Canceled));
     }
 
     function test_revert_below_threshold() public {

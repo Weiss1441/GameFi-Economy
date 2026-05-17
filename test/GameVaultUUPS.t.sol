@@ -9,6 +9,7 @@ import "../src/vault/GameVaultV2.sol";
 
 contract MockToken is ERC20 {
     constructor() ERC20("Mock Resource", "mRES") {}
+
     function mint(address to, uint256 amount) external {
         _mint(to, amount);
     }
@@ -22,18 +23,16 @@ contract GameVaultUUPSTest is Test {
     GameVaultV1 public vaultV1;
     GameVaultV2 public vaultV2;
 
-    address public owner        = address(this);
+    address public owner = address(this);
     address public feeRecipient = address(0xFEE);
-    address public alice        = address(0xA11CE);
+    address public alice = address(0xA11CE);
 
     function setUp() public {
         asset = new MockToken();
         implementationV1 = new GameVaultV1();
-        bytes memory initData = abi.encodeCall(
-            GameVaultV1.initialize,
-            (address(asset), "GameFi Vault", "gvGFI", 500, feeRecipient, 50)
-        );
-        proxy  = new ERC1967Proxy(address(implementationV1), initData);
+        bytes memory initData =
+            abi.encodeCall(GameVaultV1.initialize, (address(asset), "GameFi Vault", "gvGFI", 500, feeRecipient, 50));
+        proxy = new ERC1967Proxy(address(implementationV1), initData);
         vaultV1 = GameVaultV1(address(proxy));
     }
 
@@ -87,9 +86,7 @@ contract GameVaultUUPSTest is Test {
     }
 
     function testSetYieldRateTooHighReverts() public {
-        vm.expectRevert(
-            abi.encodeWithSelector(GameVaultV1.YieldRateTooHigh.selector, 99999, 10000)
-        );
+        vm.expectRevert(abi.encodeWithSelector(GameVaultV1.YieldRateTooHigh.selector, 99999, 10000));
         vaultV1.setYieldRate(99999);
     }
 
@@ -117,16 +114,62 @@ contract GameVaultUUPSTest is Test {
     function testUpgradeToV2() public {
         vaultV1.setYieldRate(750);
         implementationV2 = new GameVaultV2();
-        GameVaultV1(address(proxy)).upgradeToAndCall(
-            address(implementationV2),
-            abi.encodeCall(GameVaultV2.initializeV2, (1000))
-        );
+        GameVaultV1(address(proxy))
+            .upgradeToAndCall(address(implementationV2), abi.encodeCall(GameVaultV2.initializeV2, (1000)));
         vaultV2 = GameVaultV2(address(proxy));
         assertEq(vaultV2.yieldRate(), 750);
         assertEq(vaultV2.owner(), owner);
         assertEq(vaultV2.feeBps(), 50);
         assertEq(vaultV2.reserveRatioBps(), 1000);
         assertEq(vaultV2.getReserveAdjustedAssets(10_000 ether), 9000 ether);
+    }
+
+    function testV2DepositTracksStakeDuration() public {
+        implementationV2 = new GameVaultV2();
+        GameVaultV1(address(proxy))
+            .upgradeToAndCall(address(implementationV2), abi.encodeCall(GameVaultV2.initializeV2, (0)));
+        vaultV2 = GameVaultV2(address(proxy));
+
+        uint256 amount = 1000 ether;
+        asset.mint(alice, amount);
+        vm.startPrank(alice);
+        asset.approve(address(proxy), amount);
+        vaultV2.deposit(amount, alice);
+        vm.stopPrank();
+
+        assertEq(vaultV2.getStakeDuration(address(0xCAFE)), 0);
+        assertEq(vaultV2.stakedAt(alice), block.timestamp);
+
+        vm.warp(block.timestamp + 3 days);
+        assertEq(vaultV2.getStakeDuration(alice), 3 days);
+    }
+
+    function testV2SetReserveRatio() public {
+        implementationV2 = new GameVaultV2();
+        GameVaultV1(address(proxy))
+            .upgradeToAndCall(address(implementationV2), abi.encodeCall(GameVaultV2.initializeV2, (500)));
+        vaultV2 = GameVaultV2(address(proxy));
+
+        vaultV2.setReserveRatio(2500);
+        assertEq(vaultV2.reserveRatioBps(), 2500);
+        assertEq(vaultV2.getReserveAdjustedAssets(10_000 ether), 7500 ether);
+    }
+
+    function testV2ReserveRatioTooHighReverts() public {
+        implementationV2 = new GameVaultV2();
+        GameVaultV1(address(proxy))
+            .upgradeToAndCall(address(implementationV2), abi.encodeCall(GameVaultV2.initializeV2, (500)));
+        vaultV2 = GameVaultV2(address(proxy));
+
+        vm.expectRevert(abi.encodeWithSelector(GameVaultV2.ReserveRatioTooHigh.selector, 5001, 5000));
+        vaultV2.setReserveRatio(5001);
+    }
+
+    function testV2InitializeReserveRatioTooHighReverts() public {
+        implementationV2 = new GameVaultV2();
+        vm.expectRevert(abi.encodeWithSelector(GameVaultV2.ReserveRatioTooHigh.selector, 5001, 5000));
+        GameVaultV1(address(proxy))
+            .upgradeToAndCall(address(implementationV2), abi.encodeCall(GameVaultV2.initializeV2, (5001)));
     }
 
     function testUpgradeFailsForNonOwner() public {
@@ -145,10 +188,8 @@ contract GameVaultUUPSTest is Test {
         vm.stopPrank();
         uint256 sharesBefore = vaultV1.balanceOf(alice);
         implementationV2 = new GameVaultV2();
-        GameVaultV1(address(proxy)).upgradeToAndCall(
-            address(implementationV2),
-            abi.encodeCall(GameVaultV2.initializeV2, (500))
-        );
+        GameVaultV1(address(proxy))
+            .upgradeToAndCall(address(implementationV2), abi.encodeCall(GameVaultV2.initializeV2, (500)));
         vaultV2 = GameVaultV2(address(proxy));
         assertEq(vaultV2.balanceOf(alice), sharesBefore);
         assertGt(vaultV2.totalFeesCollected(), 0);

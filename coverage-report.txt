@@ -1,0 +1,304 @@
+Compiling 142 files with Solc 0.8.25
+Solc 0.8.25 finished in 2.07s
+Compiler run successful with warnings:
+Warning (2072): Unused local variable.
+  --> test/GameFactory.t.sol:40:10:
+   |
+40 |         (address actualItems, address actualParams) = factory.deployGameCREATE(GAME_NAME, GAME_SYMBOL);
+   |          ^^^^^^^^^^^^^^^^^^^
+
+Warning (2072): Unused local variable.
+  --> test/GameFactory.t.sol:40:31:
+   |
+40 |         (address actualItems, address actualParams) = factory.deployGameCREATE(GAME_NAME, GAME_SYMBOL);
+   |                               ^^^^^^^^^^^^^^^^^^^^
+
+Warning (2018): Function state mutability can be restricted to view
+  --> test/PriceFeedOracle.t.sol:24:5:
+   |
+24 |     function test_getLatestPrice() public {
+   |     ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (2018): Function state mutability can be restricted to view
+  --> test/PriceFeedOracle.t.sol:31:5:
+   |
+31 |     function test_getMaxStaleness() public {
+   |     ^ (Relevant source part starts here and spans across multiple lines).
+
+Analysing contracts...
+Running tests...
+
+Ran 1 test for src/governance/GovernanceToken.sol:GovernanceToken
+[PASS] testMint() (gas: 27180)
+Suite result: ok. 1 passed; 0 failed; 0 skipped; finished in 901.50µs (527.90µs CPU time)
+
+Ran 4 tests for test/GameVaultV1.t.sol:GameVaultV1Test
+[PASS] test_getProjectedAssets_over_year() (gas: 15040)
+[PASS] test_initialize_sets_values() (gas: 32559)
+[PASS] test_nonowner_cannot_setYieldRate() (gas: 16840)
+[PASS] test_owner_can_setYieldRate() (gas: 23771)
+Suite result: ok. 4 passed; 0 failed; 0 skipped; finished in 3.82ms (4.30ms CPU time)
+
+Ran 5 tests for test/GameParameters.t.sol:GameParametersTest
+[PASS] test_revert_nonOwner_setDropRate() (gas: 15140)
+[PASS] test_revert_rateExceedsMax() (gas: 14616)
+[PASS] test_setCraftingCost() (gas: 39388)
+[PASS] test_setDropRate() (gas: 39370)
+[PASS] test_setMultipleDropRates() (gas: 94078)
+Suite result: ok. 5 passed; 0 failed; 0 skipped; finished in 8.86ms (4.55ms CPU time)
+
+Ran 7 tests for test/PriceFeedOracle.t.sol:PriceFeedOracleTest
+[PASS] test_getLatestPrice() (gas: 24976)
+[PASS] test_getMaxStaleness() (gas: 7871)
+[PASS] test_ownerCanUpdateFeed() (gas: 390468)
+[PASS] test_ownerCanUpdateMaxStaleness() (gas: 21022)
+[PASS] test_revert_nonOwnerSetFeed() (gas: 374461)
+[PASS] test_revert_onNegativePrice() (gas: 32470)
+[PASS] test_revert_onStalePrice() (gas: 25519)
+Suite result: ok. 7 passed; 0 failed; 0 skipped; finished in 22.04ms (9.36ms CPU time)
+
+Ran 16 tests for test/GameItems.t.sol:GameItemsTest
+[PASS] testFuzz_mint_amount(uint256) (runs: 256, μ: 50083, ~: 50709)
+[PASS] test_approved_operator_can_burn() (gas: 85241)
+[PASS] test_burn_item() (gas: 56102)
+[PASS] test_craft_item() (gas: 124242)
+[PASS] test_metadata_and_gameParams() (gas: 24596)
+[PASS] test_mintFromVRF() (gas: 44935)
+[PASS] test_mint_item() (gas: 48849)
+[PASS] test_revert_craft_no_ingredients() (gas: 13277)
+[PASS] test_revert_mintFromVRF_invalidReceiver() (gas: 14864)
+[PASS] test_revert_nonAdminSetCraftingRecipe() (gas: 15952)
+[PASS] test_revert_unauthorized_burn() (gas: 52495)
+[PASS] test_revert_unauthorized_mint() (gas: 15975)
+[PASS] test_revert_unauthorized_mintFromVRF() (gas: 14776)
+[PASS] test_setCraftingRecipe() (gas: 113313)
+[PASS] test_supportsInterfaces() (gas: 8133)
+[PASS] test_uri_format() (gas: 12278)
+Suite result: ok. 16 passed; 0 failed; 0 skipped; finished in 79.19ms (95.64ms CPU time)
+
+Ran 7 tests for test/GovernanceTokenTest.t.sol:GovernanceTokenTest
+[PASS] testFuzz_votingPower(uint256) (runs: 256, μ: 122817, ~: 122258)
+[PASS] test_delegate() (gas: 85020)
+[PASS] test_initialSupply() (gas: 7991)
+[PASS] test_permit() (gas: 110189)
+[PASS] test_testMint() (gas: 57725)
+[PASS] test_transfer() (gas: 45345)
+[PASS] test_voting_power_after_delegate() (gas: 121957)
+Suite result: ok. 7 passed; 0 failed; 0 skipped; finished in 86.04ms (92.06ms CPU time)
+
+Ran 9 tests for test/GameGovernor.t.sol:GameGovernorTest
+[PASS] testFuzz_votingPowerAfterDelegate(uint256) (runs: 256, μ: 167881, ~: 167881)
+[PASS] testGovernanceFlow() (gas: 323615)
+[PASS] test_cancelDefeatedProposalByProposer() (gas: 101063)
+[PASS] test_governorParameters() (gas: 42105)
+[PASS] test_proposalNeedsQueuing() (gas: 77657)
+[PASS] test_proposalState_active() (gas: 82871)
+[PASS] test_proposalState_defeated() (gas: 160819)
+[PASS] test_revert_below_threshold() (gas: 30128)
+[PASS] test_revert_double_vote() (gas: 147549)
+Suite result: ok. 9 passed; 0 failed; 0 skipped; finished in 150.02ms (163.26ms CPU time)
+
+Ran 18 tests for test/GameFactory.t.sol:GameFactoryTest
+[PASS] testFuzz_deployGameCREATE2_differentSalts(uint256) (runs: 256, μ: 3689332, ~: 3689332)
+[PASS] testFuzz_predictAddressCREATE2_neverZero(uint256) (runs: 256, μ: 25404, ~: 25404)
+[PASS] test_deployGameCREATE() (gas: 3688525)
+[PASS] test_deployGameCREATE2() (gas: 3689855)
+[PASS] test_deployGameCREATE2_deterministicAddress() (gas: 3708864)
+[PASS] test_deployGameCREATE2_differentSaltDifferentAddress() (gas: 7345537)
+[PASS] test_deployGameCREATE2_emitsEventWithSalt() (gas: 3705058)
+[PASS] test_deployGameCREATE2_sameSaltSameAddress() (gas: 1040544825)
+[PASS] test_deployGameCREATE_emitsEvent() (gas: 3701347)
+[PASS] test_deployGameCREATE_multipleDeployments() (gas: 7338458)
+[PASS] test_deploymentByMultipleUsers() (gas: 7340831)
+[PASS] test_getDeploymentCount_incrementsAfterDeploy() (gas: 7345760)
+[PASS] test_getDeploymentCount_initialZero() (gas: 7951)
+[PASS] test_mixedCREATEandCREATE2() (gas: 7349477)
+[PASS] test_predictAddressCREATE2_consistent() (gas: 45511)
+[PASS] test_predictAddressCREATE2_differentNameDifferentAddress() (gas: 44645)
+[PASS] test_predictAddressCREATE2_returnsAddress() (gas: 25312)
+[PASS] test_revert_deployGameCREATE2_zeroSalt() (gas: 1040544758)
+Suite result: ok. 18 passed; 0 failed; 0 skipped; finished in 241.63ms (368.70ms CPU time)
+
+Ran 7 tests for test/LootBoxVRF.t.sol:LootBoxVRFTest
+[PASS] test_adminSetters() (gas: 33503)
+[PASS] test_fulfillRandomWords_mintsRandomItemAndMarksFulfilled() (gas: 220979)
+[PASS] test_requestLoot_storesRequestAndPassesVRFConfig() (gas: 188103)
+[PASS] test_revert_fulfillAlreadyFulfilled() (gas: 219690)
+[PASS] test_revert_fulfillUnknownRequest() (gas: 21176)
+[PASS] test_revert_nonAdminSetter() (gas: 14066)
+[PASS] test_revert_rawFulfillFromNonCoordinator() (gas: 175543)
+Suite result: ok. 7 passed; 0 failed; 0 skipped; finished in 724.38ms (13.72ms CPU time)
+
+Ran 22 tests for test/GameVaultUUPS.t.sol:GameVaultUUPSTest
+[PASS] testCannotInitializeTwice() (gas: 23804)
+[PASS] testDeposit() (gas: 204455)
+[PASS] testDepositZeroReverts() (gas: 21704)
+[PASS] testFuzz_deposit(uint256) (runs: 256, μ: 201395, ~: 201395)
+[PASS] testFuzz_feeBpsNeverExceedsMax(uint256) (runs: 256, μ: 27300, ~: 27932)
+[PASS] testFuzz_withdraw(uint256) (runs: 256, μ: 231956, ~: 231956)
+[PASS] testGetProjectedAssets() (gas: 14954)
+[PASS] testInitialized() (gas: 34748)
+[PASS] testSetFeeBps() (gas: 21601)
+[PASS] testSetFeeRecipient() (gas: 24111)
+[PASS] testSetFeeRecipientZeroReverts() (gas: 16291)
+[PASS] testSetYieldRate() (gas: 23704)
+[PASS] testSetYieldRateNonOwnerReverts() (gas: 19018)
+[PASS] testSetYieldRateTooHighReverts() (gas: 17458)
+[PASS] testStoragePreservedAfterUpgrade() (gas: 4023763)
+[PASS] testUpgradeFailsForNonOwner() (gas: 3774822)
+[PASS] testUpgradeToV2() (gas: 3855277)
+[PASS] testV2DepositTracksStakeDuration() (gas: 4028032)
+[PASS] testV2InitializeReserveRatioTooHighReverts() (gas: 3786449)
+[PASS] testV2ReserveRatioTooHighReverts() (gas: 3834588)
+[PASS] testV2SetReserveRatio() (gas: 3836901)
+[PASS] testWithdraw() (gas: 243107)
+Suite result: ok. 22 passed; 0 failed; 0 skipped; finished in 854.55ms (1.91s CPU time)
+
+Ran 3 tests for test/fork/Fork.t.sol:ForkTest
+[PASS] test_fork_chainlink_eth_usd_feed() (gas: 21976)
+[PASS] test_fork_usdc_total_supply() (gas: 15077)
+[PASS] test_fork_usdc_transfer() (gas: 55925)
+Suite result: ok. 3 passed; 0 failed; 0 skipped; finished in 1.34s (1.91s CPU time)
+
+Ran 5 tests for test/RentalVault.t.sol:RentalVaultTest
+[PASS] test_deposit() (gas: 107927)
+[PASS] test_reclaim() (gas: 147366)
+[PASS] test_rent() (gas: 159751)
+[PASS] test_returnNft() (gas: 144367)
+[PASS] test_revert_notOwnerReclaim() (gas: 114413)
+Suite result: ok. 5 passed; 0 failed; 0 skipped; finished in 62.28s (10.08ms CPU time)
+
+Ran 3 tests for test/invariant/GameVaultV1.invariant.t.sol:GameVaultV1InvariantTest
+[PASS] invariant_projected_ge_assets() (runs: 256, calls: 128000, reverts: 38561)
+
+╭----------------+----------+--------+---------+----------╮
+| Contract       | Selector | Calls  | Reverts | Discards |
++=========================================================+
+| VaultHandlerV1 | probe    | 128000 | 38561   | 0        |
+╰----------------+----------+--------+---------+----------╯
+
+[PASS] invariant_projected_nonnegative() (runs: 256, calls: 128000, reverts: 38582)
+
+╭----------------+----------+--------+---------+----------╮
+| Contract       | Selector | Calls  | Reverts | Discards |
++=========================================================+
+| VaultHandlerV1 | probe    | 128000 | 38582   | 0        |
+╰----------------+----------+--------+---------+----------╯
+
+[PASS] invariant_yieldRate_bound() (runs: 256, calls: 128000, reverts: 38565)
+
+╭----------------+----------+--------+---------+----------╮
+| Contract       | Selector | Calls  | Reverts | Discards |
++=========================================================+
+| VaultHandlerV1 | probe    | 128000 | 38565   | 0        |
+╰----------------+----------+--------+---------+----------╯
+
+Suite result: ok. 3 passed; 0 failed; 0 skipped; finished in 62.28s (182.80s CPU time)
+
+Ran 2 tests for test/invariant/GameVaultV2.invariant.t.sol:GameVaultV2InvariantTest
+[PASS] invariant_reserve_adjusted_le_assets() (runs: 256, calls: 128000, reverts: 7789)
+
+╭----------------+----------------------+--------+---------+----------╮
+| Contract       | Selector             | Calls  | Reverts | Discards |
++=====================================================================+
+| VaultHandlerV2 | probeReserveAdjusted | 128000 | 7789    | 0        |
+╰----------------+----------------------+--------+---------+----------╯
+
+[PASS] invariant_reserve_ratio_bound() (runs: 256, calls: 128000, reverts: 7766)
+
+╭----------------+----------------------+--------+---------+----------╮
+| Contract       | Selector             | Calls  | Reverts | Discards |
++=====================================================================+
+| VaultHandlerV2 | probeReserveAdjusted | 128000 | 7766    | 0        |
+╰----------------+----------------------+--------+---------+----------╯
+
+Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 68.45s (135.28s CPU time)
+
+Ran 3 tests for test/invariant/ResourceAMM.invariant.t.sol:ResourceAMMInvariantTest
+[PASS] invariant_k_never_decreases() (runs: 256, calls: 128000, reverts: 0)
+
+╭------------+--------------+-------+---------+----------╮
+| Contract   | Selector     | Calls | Reverts | Discards |
++========================================================+
+| AMMHandler | addLiquidity | 64021 | 0       | 0        |
+|------------+--------------+-------+---------+----------|
+| AMMHandler | swap         | 63979 | 0       | 0        |
+╰------------+--------------+-------+---------+----------╯
+
+[PASS] invariant_liquidity_shares_nonzero() (runs: 256, calls: 128000, reverts: 0)
+
+╭------------+--------------+-------+---------+----------╮
+| Contract   | Selector     | Calls | Reverts | Discards |
++========================================================+
+| AMMHandler | addLiquidity | 64021 | 0       | 0        |
+|------------+--------------+-------+---------+----------|
+| AMMHandler | swap         | 63979 | 0       | 0        |
+╰------------+--------------+-------+---------+----------╯
+
+[PASS] invariant_reserves_match_balances() (runs: 256, calls: 128000, reverts: 0)
+
+╭------------+--------------+-------+---------+----------╮
+| Contract   | Selector     | Calls | Reverts | Discards |
++========================================================+
+| AMMHandler | addLiquidity | 64021 | 0       | 0        |
+|------------+--------------+-------+---------+----------|
+| AMMHandler | swap         | 63979 | 0       | 0        |
+╰------------+--------------+-------+---------+----------╯
+
+Suite result: ok. 3 passed; 0 failed; 0 skipped; finished in 87.69s (257.84s CPU time)
+
+Ran 9 tests for test/ResourceAMM.t.sol:ResourceAMMTest
+[PASS] testFuzz_addLiquidity(uint256,uint256) (runs: 256, μ: 213562, ~: 213834)
+[PASS] testFuzz_swapInvariant(uint256) (runs: 256, μ: 236590, ~: 236590)
+[PASS] test_addLiquidity() (gas: 195288)
+[PASS] test_gas_sqrtYul() (gas: 9423)
+[PASS] test_getAmountOut() (gas: 200950)
+[PASS] test_removeLiquidity() (gas: 165124)
+[PASS] test_revert_highSlippage() (gas: 205256)
+[PASS] test_revert_insufficientLiquidity() (gas: 28095)
+[PASS] test_swap() (gas: 234885)
+Suite result: ok. 9 passed; 0 failed; 0 skipped; finished in 88.03s (88.16s CPU time)
+
+Ran 16 test suites in 88.03s (372.24s CPU time): 121 tests passed, 0 failed, 0 skipped (121 total tests)
+
+╭--------------------------------------------+------------------+------------------+----------------+-----------------╮
+| File                                       | % Lines          | % Statements     | % Branches     | % Funcs         |
++=====================================================================================================================+
+| src/factory/GameFactory.sol                | 100.00% (25/25)  | 100.00% (23/23)  | 100.00% (0/0)  | 100.00% (4/4)   |
+|--------------------------------------------+------------------+------------------+----------------+-----------------|
+| src/game/GameItems.sol                     | 100.00% (36/36)  | 100.00% (35/35)  | 100.00% (6/6)  | 100.00% (8/8)   |
+|--------------------------------------------+------------------+------------------+----------------+-----------------|
+| src/game/GameParameters.sol                | 100.00% (17/17)  | 100.00% (14/14)  | 66.67% (4/6)   | 100.00% (5/5)   |
+|--------------------------------------------+------------------+------------------+----------------+-----------------|
+| src/game/RentalVault.sol                   | 89.19% (33/37)   | 93.94% (31/33)   | 57.89% (11/19) | 75.00% (6/8)    |
+|--------------------------------------------+------------------+------------------+----------------+-----------------|
+| src/game/ResourceAMM.sol                   | 94.03% (63/67)   | 94.29% (66/70)   | 58.62% (17/29) | 100.00% (7/7)   |
+|--------------------------------------------+------------------+------------------+----------------+-----------------|
+| src/governance/GameGovernor.sol            | 100.00% (20/20)  | 100.00% (19/19)  | 100.00% (0/0)  | 100.00% (10/10) |
+|--------------------------------------------+------------------+------------------+----------------+-----------------|
+| src/oracle/PriceFeedOracle.sol             | 100.00% (20/20)  | 86.96% (20/23)   | 40.00% (2/5)   | 100.00% (5/5)   |
+|--------------------------------------------+------------------+------------------+----------------+-----------------|
+| src/vault/GameVaultV1.sol                  | 98.28% (57/58)   | 90.16% (55/61)   | 43.75% (7/16)  | 100.00% (10/10) |
+|--------------------------------------------+------------------+------------------+----------------+-----------------|
+| src/vault/GameVaultV2.sol                  | 100.00% (19/19)  | 94.44% (17/18)   | 80.00% (4/5)   | 100.00% (5/5)   |
+|--------------------------------------------+------------------+------------------+----------------+-----------------|
+| src/vrf/LootBoxVRF.sol                     | 100.00% (28/28)  | 100.00% (23/23)  | 100.00% (4/4)  | 100.00% (7/7)   |
+|--------------------------------------------+------------------+------------------+----------------+-----------------|
+| test/GameVaultUUPS.t.sol                   | 100.00% (2/2)    | 100.00% (1/1)    | 100.00% (0/0)  | 100.00% (1/1)   |
+|--------------------------------------------+------------------+------------------+----------------+-----------------|
+| test/GameVaultV1.t.sol                     | 0.00% (0/1)      | 0.00% (0/1)      | 100.00% (0/0)  | 0.00% (0/1)     |
+|--------------------------------------------+------------------+------------------+----------------+-----------------|
+| test/LootBoxVRF.t.sol                      | 48.39% (15/31)   | 55.56% (10/18)   | 100.00% (0/0)  | 37.50% (6/16)   |
+|--------------------------------------------+------------------+------------------+----------------+-----------------|
+| test/ResourceAMM.t.sol                     | 100.00% (4/4)    | 100.00% (2/2)    | 100.00% (0/0)  | 100.00% (2/2)   |
+|--------------------------------------------+------------------+------------------+----------------+-----------------|
+| test/invariant/GameVaultV1.invariant.t.sol | 85.71% (6/7)     | 80.00% (4/5)     | 100.00% (0/0)  | 66.67% (2/3)    |
+|--------------------------------------------+------------------+------------------+----------------+-----------------|
+| test/invariant/GameVaultV2.invariant.t.sol | 83.33% (5/6)     | 75.00% (3/4)     | 100.00% (0/0)  | 66.67% (2/3)    |
+|--------------------------------------------+------------------+------------------+----------------+-----------------|
+| test/invariant/ResourceAMM.invariant.t.sol | 100.00% (25/25)  | 100.00% (20/20)  | 100.00% (2/2)  | 100.00% (5/5)   |
+|--------------------------------------------+------------------+------------------+----------------+-----------------|
+| test/mocks/MockV3Aggregator.sol            | 100.00% (10/10)  | 100.00% (7/7)    | 100.00% (0/0)  | 100.00% (3/3)   |
+|--------------------------------------------+------------------+------------------+----------------+-----------------|
+| Total                                      | 93.22% (385/413) | 92.84% (350/377) | 61.96% (57/92) | 85.44% (88/103) |
+╰--------------------------------------------+------------------+------------------+----------------+-----------------╯

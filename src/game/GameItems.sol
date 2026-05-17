@@ -22,11 +22,7 @@ contract GameItems is ERC1155, AccessControl, IGameItems {
     mapping(uint256 => uint256[]) public craftingRecipes;
     mapping(uint256 => uint256) public recipeResults;
 
-    constructor(
-        string memory _name,
-        string memory _symbol,
-        address _gameParams
-    )
+    constructor(string memory _name, string memory _symbol, address _gameParams)
         ERC1155("https://api.gamefi.com/items/{id}.json")
     {
         name = _name;
@@ -47,11 +43,7 @@ contract GameItems is ERC1155, AccessControl, IGameItems {
         _update(address(0), to, ids, values);
     }
 
-    function mint(address to, uint256 id, uint256 amount, bytes memory data)
-        public
-        override
-        onlyRole(ADMIN_ROLE)
-    {
+    function mint(address to, uint256 id, uint256 amount, bytes memory data) public override onlyRole(ADMIN_ROLE) {
         _mint(to, id, amount, data);
     }
 
@@ -60,11 +52,7 @@ contract GameItems is ERC1155, AccessControl, IGameItems {
         _burn(from, id, amount);
     }
 
-    function craft(uint256[] memory ingredients, uint256 resultId)
-        public
-        override
-        returns (uint256)
-    {
+    function craft(uint256[] memory ingredients, uint256 resultId) public override returns (uint256) {
         require(ingredients.length > 0, "No ingredients");
 
         for (uint256 i = 0; i < ingredients.length; i++) {
@@ -79,22 +67,13 @@ contract GameItems is ERC1155, AccessControl, IGameItems {
         return 1;
     }
 
-    function setCraftingRecipe(uint256[] memory ingredients, uint256 result)
-        public
-        onlyRole(ADMIN_ROLE)
-    {
+    function setCraftingRecipe(uint256[] memory ingredients, uint256 result) public onlyRole(ADMIN_ROLE) {
         craftingRecipes[result] = ingredients;
         recipeResults[uint256(keccak256(abi.encodePacked(ingredients)))] = result;
     }
 
     function uri(uint256 tokenId) public pure override returns (string memory) {
-        return string(
-            abi.encodePacked(
-                "https://api.gamefi.com/items/",
-                Strings.toString(tokenId),
-                ".json"
-            )
-        );
+        return string(abi.encodePacked("https://api.gamefi.com/items/", Strings.toString(tokenId), ".json"));
     }
 
     function supportsInterface(bytes4 interfaceId)

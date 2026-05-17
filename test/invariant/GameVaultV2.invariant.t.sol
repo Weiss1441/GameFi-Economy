@@ -9,7 +9,10 @@ import "../../src/vault/GameVaultV2.sol";
 
 contract MockToken is ERC20 {
     constructor() ERC20("Mock", "MCK") {}
-    function mint(address to, uint256 amount) external { _mint(to, amount); }
+
+    function mint(address to, uint256 amount) external {
+        _mint(to, amount);
+    }
 }
 
 contract VaultHandlerV2 {
@@ -41,16 +44,13 @@ contract GameVaultV2InvariantTest is Test {
         asset = new MockToken();
         implementationV1 = new GameVaultV1();
         bytes memory initData = abi.encodeCall(
-            GameVaultV1.initialize,
-            (address(asset), "GameFi Vault Shares", "vGFI", 500, feeRecipient, 50)
+            GameVaultV1.initialize, (address(asset), "GameFi Vault Shares", "vGFI", 500, feeRecipient, 50)
         );
         proxy = new ERC1967Proxy(address(implementationV1), initData);
 
         implementationV2 = new GameVaultV2();
-        GameVaultV1(address(proxy)).upgradeToAndCall(
-            address(implementationV2),
-            abi.encodeCall(GameVaultV2.initializeV2, (1000))
-        );
+        GameVaultV1(address(proxy))
+            .upgradeToAndCall(address(implementationV2), abi.encodeCall(GameVaultV2.initializeV2, (1000)));
 
         vault = GameVaultV2(address(proxy));
         handler = new VaultHandlerV2(vault);
