@@ -5,10 +5,15 @@
     "func-visibility": "off",
     "func-name-mixedcase": "off",
     "gas-custom-errors": "off",
+    "gas-increment-by-one": "off",
     "gas-indexed-events": "off",
     "immutable-vars-naming": "off",
     "import-path-check": "off",
+    "no-empty-blocks": "off",
+    "no-global-import": "off",
+    "one-contract-per-file": "off",
     "private-vars-leading-underscore": "off",
+    "state-visibility": "off",
     "use-natspec": "off"
   }
 }
