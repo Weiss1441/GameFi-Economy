@@ -34,12 +34,13 @@ contract RentalVault is Ownable, ReentrancyGuard, ERC1155Holder, IRentalVault {
         require(amount > 0, "Amount must be > 0");
         require(rentals[tokenId].renter == address(0), "Item is currently rented");
 
-        gameItems.safeTransferFrom(msg.sender, address(this), tokenId, amount, "");
         depositedAmounts[tokenId] += amount;
 
         if (rentals[tokenId].owner == address(0)) {
             rentals[tokenId].owner = msg.sender;
         }
+
+        gameItems.safeTransferFrom(msg.sender, address(this), tokenId, amount, "");
     }
 
     function rent(uint256 tokenId, address renter, uint256 duration) external override nonReentrant {

@@ -138,6 +138,8 @@ contract GameVaultUUPSTest is Test {
         vm.stopPrank();
 
         assertEq(vaultV2.getStakeDuration(address(0xCAFE)), 0);
+        assertTrue(vaultV2.hasStakeTimestamp(alice));
+        assertFalse(vaultV2.hasStakeTimestamp(address(0xCAFE)));
         assertEq(vaultV2.stakedAt(alice), block.timestamp);
 
         vm.warp(block.timestamp + 3 days);

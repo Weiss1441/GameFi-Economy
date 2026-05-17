@@ -8,6 +8,7 @@ contract GameVaultV2 is GameVaultV1 {
     uint256 public constant MAX_RESERVE_RATIO_BPS = 5000;
 
     mapping(address => uint256) public stakedAt;
+    mapping(address => bool) public hasStakeTimestamp;
 
     event ReserveRatioUpdated(uint256 oldRatio, uint256 newRatio);
 
@@ -21,7 +22,8 @@ contract GameVaultV2 is GameVaultV1 {
     }
 
     function deposit(uint256 assets, address receiver) public override returns (uint256 shares) {
-        if (stakedAt[receiver] == 0) {
+        if (!hasStakeTimestamp[receiver]) {
+            hasStakeTimestamp[receiver] = true;
             stakedAt[receiver] = block.timestamp;
         }
         shares = super.deposit(assets, receiver);
@@ -41,7 +43,7 @@ contract GameVaultV2 is GameVaultV1 {
     }
 
     function getStakeDuration(address user) public view returns (uint256) {
-        if (stakedAt[user] == 0) return 0;
+        if (!hasStakeTimestamp[user]) return 0;
         return block.timestamp - stakedAt[user];
     }
 }
