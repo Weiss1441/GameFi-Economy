@@ -2,7 +2,13 @@
   "extends": "solhint:recommended",
   "rules": {
     "compiler-version": "off",
+    "func-visibility": "off",
     "func-name-mixedcase": "off",
-    "private-vars-leading-underscore": "off"
+    "gas-custom-errors": "off",
+    "gas-indexed-events": "off",
+    "immutable-vars-naming": "off",
+    "import-path-check": "off",
+    "private-vars-leading-underscore": "off",
+    "use-natspec": "off"
   }
 }
