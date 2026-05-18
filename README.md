@@ -55,7 +55,7 @@ forge coverage
 
 
 
-# WEEK 8
+# WEEK 8-9
 
 ### Added Components
 
@@ -82,12 +82,27 @@ forge coverage
 ### Tests
 
 - forge test test/GovernanceTokenTest.t.sol
- - forge test test/GameVaultV1.t.sol
+- forge test test/GameVaultV1.t.sol
 - forge test test/GameFactory.t.sol
+- forge test test/GameGovernor.t.sol
+- forge test test/GameItems.t.sol
+- forge test test/GameParameters.t.sol
+- forge test test/GameVaultUUPS.t.sol
+- forge test test/LootBoxVRF.t.sol
+- forge test test/PriceFeedOracle.t.sol
+- forge test test/RentalVault.t.sol
+- forge test test/ResourceAMM.t.sol
+- forge test test/fork/Fork.t.sol
+- forge test test/invariant/GameVaultV1.invariant.t.sol
+- forge test test/invariant/GameVaultV2.invariant.t.sol
+- forge test test/invariant/ResourceAMM.invariant.t.sol
+
+121 tests passed, 0 failed, 0 skipped
+
 
 ### Check coverage
-- forge coverage --report summary
-
+- forge coverage --no-match-coverage "script"
+ Result: 92.14% (387/420)
 
 # Verified contracts links
 

@@ -513,59 +513,91 @@ The indexing layer is organized within the subgraph/ directory and relies on thr
 
 ### 8.2 Production-Ready GraphQL Interfaces
 
-The client interface queries the subgraph using targeted GraphQL structures to populate its data dashboards:
+The deployed subgraph exposes indexed protocol activity through The Graph Studio endpoint:
+
+`https://api.studio.thegraph.com/query/960/game-fi/v0.0.3`
+
+The schema contains four indexed entities: `Swap`, `Transfer`, `Vote`, and `UserStat`. The following five GraphQL queries were tested in The Graph Studio Playground.
+
+#### Query 1: Latest AMM Swaps
 
 ```graphql
-# Query 1: Fetch active governance proposals and current vote counts
-query GetActiveProposals {
-  proposals(where: { status: "Active" }, orderBy: startBlock, orderDirection: desc) {
+query LatestSwaps {
+  swaps(first: 5, orderBy: timestamp, orderDirection: desc) {
     id
-    proposer
-    description
-    forVotes
-    againstVotes
-  }
-}
-
-# Query 2: Retrieve historical vote allocations for a specific user address
-query GetUserVotingHistory($voterAddress: ID!) {
-  voters(id: $voterAddress) {
-    votes {
-      proposal { id description }
-      support
-      weight
-    }
-  }
-}
-
-# Query 3: Gather pool analytics and volume tracking data for ResourceAMM
-query GetAMMMetrics {
-  poolEntities(orderBy: dailyVolumeUSD, orderDirection: desc) {
-    id
-    reserveA
-    reserveB
-    totalDailySwaps
-  }
-}
-
-# Query 4: Track total value locked (TVL) inside GameVault
-query GetVaultAnalytics {
-  vaults(id: "0xCoreVaultAddress...") {
-    totalUnderlyingAssets
-    totalSharesOutstanding
-    historicalUtilizationRate
-  }
-}
-
-# Query 5: Audit oracle status and verify parameter configurations
-query GetOracleStatus {
-  oracleAdapters {
-    id
-    currentFeedAddress
-    maxStalenessThreshold
-    lastIndexedBlockTimestamp
+    user
+    tokenIn
+    tokenOut
+    amountIn
+    amountOut
+    timestamp
   }
 }
 ```
 
+Verified result: the query returned three indexed AMM swaps from user `0xf39f...2266`, including swaps from governance token `0x6497...aa50` to swap token `0xf94d...5178`.
 
+#### Query 2: Latest Vault Transfers
+
+```graphql
+query LatestVaultTransfers {
+  transfers(first: 5, orderBy: timestamp, orderDirection: desc) {
+    id
+    from
+    to
+    amount
+    timestamp
+  }
+}
+```
+
+Verified result: the query returned a vault share mint transfer from the zero address to `0xf39f...2266` for `1.0` vault share.
+
+#### Query 3: Latest Governance Votes
+
+```graphql
+query LatestVotes {
+  votes(first: 5) {
+    id
+    voter
+    proposalId
+    support
+    weight
+    reason
+  }
+}
+```
+
+Verified result: the query returned three indexed governance votes from `0xf39f...2266`, including both `support: 1` and `support: 0` votes.
+
+#### Query 4: User Statistics Leaderboard
+
+```graphql
+query UserStats {
+  userStats(first: 10, orderBy: lastActiveAt, orderDirection: desc) {
+    id
+    totalSwaps
+    totalVolumeIn
+    totalVotes
+    lastActiveAt
+  }
+}
+```
+
+Verified result: the query returned aggregated user activity for `0xf39f...2266` with `3` swaps, `3 ETH-scaled units` of total swap volume, and `3` governance votes.
+
+#### Query 5: Single User Activity
+
+```graphql
+query UserActivity {
+  userStat(id: "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266") {
+    id
+    totalSwaps
+    totalVolumeIn
+    totalVotes
+    lastActiveAt
+  }
+}
+```
+
+Verified result: the query returned the indexed activity record for `0xf39f...2266`, showing `totalSwaps = 3`, `totalVolumeIn = 3000000000000000000`, `totalVotes = 3`, and `lastActiveAt = 1779062665`.

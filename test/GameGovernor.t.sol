@@ -63,8 +63,8 @@ contract GameGovernorTest is Test {
     }
 
     function test_governorParameters() public view {
-        assertEq(governor.votingDelay(), 7200);
-        assertEq(governor.votingPeriod(), 50400);
+        assertEq(governor.votingDelay(), 1);
+        assertEq(governor.votingPeriod(), 50);
         assertEq(governor.proposalThreshold(), 10000 ether);
         assertEq(governor.quorum(block.number - 1), token.totalSupply() * 4 / 100);
         assertEq(governor.timelock(), address(timelock));

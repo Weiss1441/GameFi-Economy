@@ -240,6 +240,30 @@
             </div>
             <div class="action-box">
               <h3>Proposals</h3>
+              <div class="proposal-form">
+                <label
+                  >Recipe ID
+                  <input id="proposalRecipeId" type="number" min="1" value="3"
+                /></label>
+                <label
+                  >New crafting cost
+                  <input id="proposalCraftCost" type="number" min="0" value="1"
+                /></label>
+                <label
+                  >Description
+                  <input
+                    id="proposalDescription"
+                    type="text"
+                    value="Update crafting cost through DAO"
+                  />
+                </label>
+                <button id="createProposalButton" class="full-width">
+                  Create proposal
+                </button>
+                <div id="proposalStatus" class="small-message">
+                  Create a proposal after delegating voting power.
+                </div>
+              </div>
               <div id="proposalList">Loading proposals...</div>
             </div>
           </div>

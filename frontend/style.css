@@ -392,6 +392,12 @@ section.card > button,
   gap: 12px;
 }
 
+.proposal-form {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
 .proposal-card {
   padding: 12px;
   border-radius: 16px;

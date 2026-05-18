@@ -8,9 +8,9 @@ dataSources:
     name: ResourceAMM
     network: arbitrum-sepolia
     source:
-      address: "0x57eD2c4971c019Ab120fbD6439E336C87CD56166"
+      address: "0x9fF4608bAEb3a055CcBBa85c2Aabaf6EF5c50120"
       abi: ResourceAMM
-      startBlock: 0
+      startBlock: 269189500
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -29,9 +29,9 @@ dataSources:
     name: GameVault
     network: arbitrum-sepolia
     source:
-      address: "0xCC19E02C1A6a97456D942a471516b44a084aA361"
+      address: "0xFEcb9C97B3CeA50D69B4f70571b622394441030D"
       abi: GameVaultV1
-      startBlock: 0
+      startBlock: 269189500
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -50,9 +50,9 @@ dataSources:
     name: GameGovernor
     network: arbitrum-sepolia
     source:
-      address: "0x513a9341B3C1CfBb23Dce5C8104D6cE84B61116E"
+      address: "0x602F359Ec3301813a9a450495F9C046c51DfC632"
       abi: GameGovernor
-      startBlock: 0
+      startBlock: 269189500
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7

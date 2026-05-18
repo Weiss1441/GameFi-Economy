@@ -17,7 +17,7 @@ contract GameGovernor is
 {
     constructor(IVotes _token, TimelockController _timelock)
         Governor("GameGovernor")
-        GovernorSettings(7200, 50400, 10000 ether)
+        GovernorSettings(1, 50, 10000 ether)
         GovernorVotes(_token)
         GovernorVotesQuorumFraction(4)
         GovernorTimelockControl(_timelock)

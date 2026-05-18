@@ -1,18 +1,18 @@
 const REQUIRED_CHAIN_ID = 421614;
 
 const config = {
-  governanceToken: "0x0b437CD552a192A0662B08dc843cC2CaD8704a9c",
-  gameGovernor: "0x95bA2074cd84ea48aAa3DC553e663d98b9a756A4",
-  resourceAmm: "0xB9d86f7faDDC177C41E1d3de8a7a21127a8018D2",
-  gameVault: "0xb2572c83406a0824B8557AAFb9FC037070d82041",
-  gameItems: "0x7ECFB17fae78476Cc0A6Ca7239e87B8C40B61406",
-  lootBoxVrf: "0x2B2C850b9094FFF0f2d814BC79ae696b0cBb6006",
-  gameParameters: "0x9AD99854cB4d757a5C684d3951ebCB9edbdA7906",
-  rentalVault: "0x78Af981075BaA5F9d64f84cEC26A9970C9B4404A",
+  governanceToken: "0x6497a8b10b47628C010B2a691fC86e9727E1AA50",
+  gameGovernor: "0x602F359Ec3301813a9a450495F9C046c51DfC632",
+  resourceAmm: "0x9fF4608bAEb3a055CcBBa85c2Aabaf6EF5c50120",
+  gameVault: "0xFEcb9C97B3CeA50D69B4f70571b622394441030D",
+  gameItems: "0x285dc067d22C55B12ADC5E4fB73B886873925dEa",
+  lootBoxVrf: "0xDF83Ef7D43148ad74fBc6F250c5E742d22D380D3",
+  gameParameters: "0xdb266AC6e143Bf7124018792414B497E0eBC1aF7",
+  rentalVault: "0xEeAE996434eA62Cbe46fEa73D7172AdC069882De",
   rpc: {
     421614: "https://sepolia-rollup.arbitrum.io/rpc",
   },
-  graphDefault: "https://api.studio.thegraph.com/query/960/game-fi/v0.0.1",
+  graphDefault: "https://api.studio.thegraph.com/query/960/game-fi/v0.0.3",
 };
 
 const abis = {
@@ -25,10 +25,16 @@ const abis = {
     "function testMint()",
     "function delegate(address)",
     "function getVotes(address) view returns (uint256)",
+    "function getPastVotes(address,uint256) view returns (uint256)",
     "function delegates(address) view returns (address)",
   ],
   governor: [
     "function state(uint256) view returns (uint8)",
+    "function hasVoted(uint256,address) view returns (bool)",
+    "function proposalSnapshot(uint256) view returns (uint256)",
+    "function proposalDeadline(uint256) view returns (uint256)",
+    "function proposalThreshold() view returns (uint256)",
+    "function propose(address[],uint256[],bytes[],string) returns (uint256)",
     "function castVote(uint256,uint8) returns (uint256)",
     "event ProposalCreated(uint256 proposalId, address proposer, address[] targets, uint256[] values, string[] signatures, bytes[] calldatas, uint256 voteStart, uint256 voteEnd, string description)",
   ],
@@ -97,6 +103,11 @@ const elements = {
   depositButton: document.getElementById("depositButton"),
   swapButton: document.getElementById("swapButton"),
   delegateButton: document.getElementById("delegateButton"),
+  proposalRecipeId: document.getElementById("proposalRecipeId"),
+  proposalCraftCost: document.getElementById("proposalCraftCost"),
+  proposalDescription: document.getElementById("proposalDescription"),
+  createProposalButton: document.getElementById("createProposalButton"),
+  proposalStatus: document.getElementById("proposalStatus"),
   proposalList: document.getElementById("proposalList"),
   subgraphEndpoint: document.getElementById("subgraphEndpoint"),
   refreshGraph: document.getElementById("refreshGraph"),
@@ -419,6 +430,7 @@ function setButtonsEnabled(enabled) {
     elements.mintSwapTokensButton,
     elements.addLiquidityButton,
     elements.mintGovernanceButton,
+    elements.createProposalButton,
   ];
   btns.forEach((btn) => {
     if (btn) btn.disabled = !enabled;
@@ -772,6 +784,103 @@ async function loadProposals() {
   }
 }
 
+async function handleCreateProposal() {
+  if (!signer) {
+    setMessage("Connect wallet first.", "error");
+    return;
+  }
+  if (!(await checkNetwork())) {
+    setMessage(
+      "Switch to the required network before creating a proposal.",
+      "error",
+    );
+    return;
+  }
+
+  const recipeId = Number(elements.proposalRecipeId?.value || "0");
+  const newCost = Number(elements.proposalCraftCost?.value || "0");
+  const description =
+    elements.proposalDescription?.value.trim() ||
+    "Update crafting cost through DAO";
+
+  if (!Number.isInteger(recipeId) || recipeId <= 0) {
+    setMessage("Enter a valid recipe ID.", "error");
+    return;
+  }
+  if (!Number.isInteger(newCost) || newCost < 0) {
+    setMessage("Enter a valid crafting cost.", "error");
+    return;
+  }
+
+  try {
+    setStatus("Creating proposal...");
+    if (elements.proposalStatus) {
+      elements.proposalStatus.textContent = "Sending proposal transaction...";
+    }
+
+    const [votes, threshold] = await Promise.all([
+      providerContracts.token.getVotes(userAddress),
+      providerContracts.governor.proposalThreshold(),
+    ]);
+    if (votes < threshold) {
+      const thresholdText = `${formatBig(threshold, tokenDecimals)} ${tokenSymbol}`;
+      const votesText = `${formatBig(votes, tokenDecimals)} ${tokenSymbol}`;
+      const message = `Not enough delegated voting power. Required: ${thresholdText}. Current: ${votesText}. Delegate votes, wait one block, then try again.`;
+      if (elements.proposalStatus) {
+        elements.proposalStatus.textContent = message;
+      }
+      setMessage(message, "error");
+      return;
+    }
+
+    const paramsInterface = new ethers.Interface([
+      "function setCraftingCost(uint256 recipeId, uint256 cost)",
+    ]);
+    const calldata = paramsInterface.encodeFunctionData("setCraftingCost", [
+      BigInt(recipeId),
+      BigInt(newCost),
+    ]);
+    const governor = providerContracts.governor.connect(signer);
+    const tx = await governor.propose(
+      [config.gameParameters],
+      [0],
+      [calldata],
+      description,
+      await getTxOverrides(),
+    );
+
+    setMessage("Proposal transaction broadcast. Waiting confirmation...");
+    const receipt = await tx.wait();
+    const created = receipt.logs
+      .map((log) => {
+        try {
+          return governor.interface.parseLog(log);
+        } catch {
+          return null;
+        }
+      })
+      .find((event) => event?.name === "ProposalCreated");
+
+    const proposalId = created?.args?.proposalId;
+    if (elements.proposalStatus) {
+      elements.proposalStatus.textContent = proposalId
+        ? `Proposal created: ${proposalId.toString().slice(0, 12)}...`
+        : "Proposal created. It will appear in the list shortly.";
+    }
+    setMessage("Proposal created.", "success");
+    await loadProposals();
+  } catch (error) {
+    const message = getErrorMessage(error);
+    if (elements.proposalStatus) {
+      elements.proposalStatus.textContent =
+        "Create proposal failed: " + message;
+    }
+    setMessage("Create proposal failed: " + message, "error");
+  } finally {
+    setStatus("Ready");
+  }
+}
+
 async function fetchSubgraph() {
   const endpoint =
     elements.subgraphEndpoint.value.trim() || config.graphDefault;
@@ -853,6 +962,38 @@ async function castVote(proposalId, support) {
   try {
     setStatus("Sending vote...");
     const contract = providerContracts.governor.connect(signer);
+    const stateId = Number(await providerContracts.governor.state(proposalId));
+    const stateLabel = getStateLabel(stateId);
+    if (stateId !== 1) {
+      setMessage(`Vote unavailable: proposal is ${stateLabel}.`, "error");
+      await loadProposals();
+      return;
+    }
+
+    const alreadyVoted = await providerContracts.governor.hasVoted(
+      proposalId,
+      userAddress,
+    );
+    if (alreadyVoted) {
+      setMessage("Vote unavailable: this wallet has already voted.", "error");
+      await loadProposals();
+      return;
+    }
+
+    const snapshotBlock =
+      await providerContracts.governor.proposalSnapshot(proposalId);
+    const snapshotVotes = await providerContracts.token.getPastVotes(
+      userAddress,
+      snapshotBlock,
+    );
+    if (snapshotVotes === 0n) {
+      setMessage(
+        "Vote unavailable: this wallet had 0 voting power at the proposal snapshot. Delegate first, wait one block, then create a new proposal.",
+        "error",
+      );
+      return;
+    }
+
     const tx = await contract.castVote(proposalId, support);
     setMessage("Vote transaction broadcast. Waiting confirmation...");
     await tx.wait();
@@ -1540,6 +1681,10 @@ function setupEventListeners() {
     handleMintGovernance,
   );
   elements.delegateButton?.addEventListener("click", handleDelegate);
+  elements.createProposalButton?.addEventListener(
+    "click",
+    handleCreateProposal,
+  );
   elements.refreshGraph?.addEventListener("click", fetchSubgraph);
   elements.craftButton?.addEventListener("click", handleCraft);
   elements.craftRecipeSelect?.addEventListener("change", updateCraftRecipeInfo);
