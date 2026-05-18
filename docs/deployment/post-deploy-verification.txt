@@ -1,0 +1,22 @@
+No files changed, compilation skipped
+Script ran successfully.
+
+== Logs ==
+  === Post-deployment verification ===
+  Deployer: 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+  Timelock: 0xA7067fA3Eb56984549A67cdE1b73054c03854aE1
+  Governor: 0x602F359Ec3301813a9a450495F9C046c51DfC632
+  PASS: Timelock delay
+  PASS: Governor votingDelay
+  PASS: Governor votingPeriod
+  PASS: Governor proposalThreshold
+  PASS: Governor quorum numerator
+  PASS: Governor timelock
+  PASS: GameParameters owner
+  PASS: RentalVault owner
+  PASS: ResourceAMM owner
+  PASS: GameVault owner
+  PASS: Governor has Timelock proposer role
+  PASS: Open executor role enabled
+  PASS: Deployer Timelock admin removed
+  === Verification complete ===
